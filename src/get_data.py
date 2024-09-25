@@ -141,34 +141,6 @@ def process_y():
     y_df.to_hdf('data/games_g.h5', key='data')
     
 
-
-def process_one_pca(filename, outfilename, n_components=35):
-    import pandas as pd
-    
-    df = pd.read_hdf(filename, key='data')
-    print('Read in game data.')
-
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.decomposition import PCA
-    from sklearn.linear_model import Lasso
-
-    train_idx = df.index.get_level_values(2) < 20230800
-
-    pipe = Pipeline([
-        ('scl', StandardScaler()),
-        ('pca', PCA(n_components=n_components))
-    ])
-    pipe.fit(df[train_idx])
-    pcad = pipe.transform(df)
-    pcad = pd.DataFrame(pcad, index=df.index)
-    print('Processed pca, writing to csv')
-    pcad.to_hdf(outfilename, key='data')
-    
-def process_pca():
-    process_one_pca('data/games_p.h5', 'data/gbgpca.h5')
-    process_one_pca('data/games_g.h5', 'data/gopca.h5', 10)
-
 def load_bios():
     import requests
     import io

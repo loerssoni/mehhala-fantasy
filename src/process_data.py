@@ -73,35 +73,4 @@ def get_full_stats(player_type, cols):
     y = y.loc[X_p.index,:].copy()
     return X_p, y
 
-def run_training(player_type, full_features_map, player_features_map, retrain=False):
-    from sklearn.ensemble import HistGradientBoostingRegressor
-    from sklearn.linear_model import LassoCV, Lasso
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.pipeline import Pipeline
-    
-    import numpy as np
-    from sklearn.metrics import r2_score, mean_absolute_error
 
-    
-    pipes = {}
-    for c in PRED_COLS[player_type]:
-        pipe = Pipeline([
-            ('scl', StandardScaler()),
-            ('reg', Lasso(alpha=1e-3))
-        ])
-        # HistGradientBoostingRegressor(loss='poisson')
-        
-        X, y = get_full_stats(player_type, cols=player_features_map[c][0])
-        X = X[full_features_map[c][0]].copy()
-        train_idx = X.index.get_level_values('gameId').astype(int) < 2023020800
-        pipe.fit(X[train_idx], y[train_idx][c])
-
-        preds = np.clip(pipe.predict(X[~train_idx]), 0, np.inf)
-        score = r2_score(y[~train_idx][c], preds)
-        print(c, '--', score)
-        mae = mean_absolute_error(y[~train_idx][c], preds)
-        print(c, '--', mae)
-        if retrain:
-            pipe.fit(X, y[c])
-        pipes[c] = pipe
-    return pipes
