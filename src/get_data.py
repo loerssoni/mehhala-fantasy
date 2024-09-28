@@ -1,3 +1,11 @@
+INDEX_COLS = [
+        'playerId',
+        'gameId', 
+        'playerTeam',
+        'opposingTeam',
+        'gameDate'
+]   
+
 def load_player_data(start_season, end_season, filename, player_type):
     import requests
     from bs4 import BeautifulSoup
@@ -61,9 +69,7 @@ def process_y():
     import pandas as pd
     df = pd.read_hdf('data/gamebygame.h5')
 
-    df = df.pivot(index=['playerId',
-                 'gameId', 
-                'playerTeam'], columns=['situation'], values=df.columns[11:])
+    df = df.pivot(index=INDEX_COLS, columns=['situation'], values=df.columns[11:])
     df.columns = [f'{s[1]}_{s[0]}' for s in df.columns]
     df.to_hdf('data/games_p.h5', key='data')
     
@@ -107,18 +113,16 @@ def process_y():
     dt = dt.sort_values(['gameId','playerTeam']).reset_index(drop=True)
     dt['win'] = (dt['goalsFor'] - dt['goalsAgainst']) > 0
 
-    games = dt[['season','gameId','playerTeam','home_or_away', 'win']].drop_duplicates()
+    games = dt[['season','gameId','playerTeam', 'opposingTeam', 'gameDate', 'home_or_away', 'win']].drop_duplicates()
     pts = df[['season','playerTeam','playerId','first_w_team', 'last_w_team', 'name']].drop_duplicates()
     games = games.merge(pts, how='left', on=['season','playerTeam'])
     games = games[(games.first_w_team <= games.gameId)&(games.last_w_team >= games.gameId)].copy()
     games = games.drop(['first_w_team','last_w_team',], axis=1)
-    games = games.merge(df, how='left', on=['season','gameId','playerTeam','playerId', 'name', 'home_or_away'])
-    games = games.drop([ 'opposingTeam', 'gameDate', 'position', 'situation'], axis=1)
+    games = games.merge(df, how='left', on=['season','gameId','playerTeam','playerId', 'opposingTeam','gameDate', 'name', 'home_or_away'])
+    games = games.drop(['position', 'situation'], axis=1)
     games = games.fillna(0)
 
-    y_df = games.set_index(['playerId',
-                 'gameId', 
-                'playerTeam'])
+    y_df = games.set_index(INDEX_COLS)
     y_df['win'] = (y_df['win']&(y_df['icetime'] > 1800)).astype(int)
     ys = {
         'ga': ['goals'],
@@ -130,7 +134,7 @@ def process_y():
         ys[k] = y_df[v].sum(1)
         
     ys['win'] = (ys['win'] > 0).astype(int)
-    ys['so'] = ys['ga'] == 0
+    ys['so'] = (ys['ga'] == 0)&(ys['icetime'] == 3600)
     ys['save'] = ys['save'] - ys['ga']
     ys['icetime'] /= 360
     ys = pd.DataFrame(ys)
