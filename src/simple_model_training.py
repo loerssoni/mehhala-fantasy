@@ -3,10 +3,10 @@ import pandas as pd
 from sklearn.linear_model import LassoCV, LinearRegression
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import cross_val_score
-from process_data import get_player_stats, get_weekly_stats, get_rest_of_season_player_stats, PRED_COLS
+from process_data import get_player_stats, get_weekly_stats, PRED_COLS
 import pickle
 
-def forward_feature_selection_with_elimination(X, y, col, tol=1e-4, cv=3):
+def forward_feature_selection_with_elimination(X, y, col, tol=1e-6, cv=3):
     
     n_features = X.shape[1]
     selected_features = []
@@ -54,17 +54,14 @@ def run_fselection(X, y):
 
 import json
 
-def load_player_feature_map(player_type, data=None):
+def load_player_feature_map(player_type):
     player_feature_map_file = f'data/{player_type}_player_features.json'
     try:
         with open(player_feature_map_file, 'r') as f:
             player_features_map = json.loads(f.read())
     except FileNotFoundError:
         print('File not found. Fitting...')
-        if data is None:
-            X_p, y = get_player_stats(player_type)
-        else:
-            X_p, y = data
+        X_p, y = get_player_stats(player_type)
         print('Data loaded')
         player_features_map = {}
         for col in y.columns:
@@ -95,64 +92,7 @@ def load_feature_maps(player_type='skater'):
             
     return full_features_map, player_features_map
 
-def run_simple_training(player_features_map, data=None, player_type=None):
-    from sklearn.ensemble import HistGradientBoostingRegressor
-    from sklearn.linear_model import LassoCV, Lasso
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.pipeline import Pipeline
-    
-    import numpy as np
-    from sklearn.metrics import r2_score, mean_absolute_error
 
-    if data is not None:
-        X, y = data
-    else:
-        X, y = get_rest_of_season_player_stats(player_type, cols=player_features_map[c][0])
-        
-    pipes = {}
-    for c in PRED_COLS[player_type]:
-        pipe = Pipeline([
-            ('scl', StandardScaler()),
-            ('reg', Lasso(alpha=3e-3))
-        ])
-                
-        X_tr = X[X.index.isin(y.index)].copy()
-        y_tr = y.loc[X.index].copy()
-        X_tr = X_tr[player_features_map[c][0]].copy()
-        pipe.fit(X_tr, y_tr[c])
-        preds = pipe.predict(X_tr)
-        score = r2_score(y_tr[c], preds)
-        print(c, '--', score)
-        mae = mean_absolute_error(y[c], preds)
-        print(c, '--', mae)
-        pipes[c] = pipe
-    return pipes
-
-def get_simple_pipelines(data_p=None, data_g=None):
-    skater_models_file = 'data/models_skater2.pkl'
-    player_features_map = load_player_feature_map('skater2')
-    try:
-        with open(skater_models_file, 'rb') as f:
-            pipes = pickle.load(f)
-    except FileNotFoundError:
-        pipes = run_simple_training(player_features_map, data=data_p, player_type='skater')
-    
-    with open(skater_models_file, 'wb') as f:
-        pickle.dump(pipes, f)
-    
-    g_player_features_map = load_player_feature_map('goalie2')
-    
-    goalie_models_file = 'data/models_goalie2.pkl'
-    try:
-        with open(goalie_models_file, 'rb') as f:
-            g_pipes = pickle.load(f)
-    except FileNotFoundError:
-        g_pipes =  run_simple_training(g_player_features_map, data=data_g, player_type='goalie')
-        
-    with open(goalie_models_file, 'wb') as f:
-        pickle.dump(g_pipes, f)
-    
-    return {'goalie':g_pipes, 'skater':pipes}
 
 
 def run_training(player_type, full_features_map, player_features_map, schedule=None, retrain=False):
@@ -226,4 +166,4 @@ def get_pipelines():
         pickle.dump(g_pipes, f)
     
     return {'goalie':g_pipes, 'skater':pipes}
-    
+

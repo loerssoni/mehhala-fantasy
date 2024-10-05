@@ -11,8 +11,8 @@ def get_player_stats(player_type, cols=None, schedule=None):
     filenames = {
         'skater':('data/games_p.h5','data/y.h5'),
         'goalie':('data/games_g.h5','data/y_g.h5')
-    } 
-    
+    }
+
     x_f, y_f = filenames[player_type]
     X = pd.read_hdf(x_f)
     X = X.sort_index(level='gameId')
@@ -29,6 +29,28 @@ def get_player_stats(player_type, cols=None, schedule=None):
         X = X.groupby('playerId').shift(1)
         X = X.dropna()
     return X, y
+
+def get_rest_of_season_player_stats(player_type, cols=None, schedule=None):
+    
+    filenames = {
+        'skater':('data/games_p.h5','data/y.h5'),
+        'goalie':('data/games_g.h5','data/y_g.h5')
+    }
+
+    x_f, y_f = filenames[player_type]
+    X = pd.read_hdf(x_f)
+    X = X.sort_index(level='gameId')
+    if cols is not None:
+        X = X[cols].copy()
+    X = X.groupby('playerId', as_index=False).rolling(30).mean().drop('playerId', axis=1)
+    y = pd.read_hdf(y_f)
+    X = X.groupby('playerId').shift(1)
+    y['date'] = pd.to_datetime(y.index.get_level_values('gameDate'), format='%Y%m%d')
+    y['season'] = (y.index.get_level_values('gameId') // 1000000)
+    y = y.sort_values('date', ascending=False)
+    y_r = y.sort_values('date', ascending=False).groupby(['playerId','season'], as_index=False)[PRED_COLS[player_type]].expanding().mean()
+    y_r = y_r.set_index(X.index)
+    return X, y_r
 
 def get_schedule_adjusted_stats(X, schedule):
     gdates = pd.to_datetime(X.index.get_level_values('gameDate'), format='%Y%m%d')
@@ -113,4 +135,15 @@ def get_weekly_stats(player_type, cols=None, schedule=None, fillna=True):
     X_p = X_p.drop(['name','player','playerId'], axis=1)
     if fillna:
         X_p = X_p.fillna(0)
+    return X_p, y
+
+def get_rest_of_season_stats(player_type, cols=None, schedule=None, fillna=True):
+    X_p, y = get_rest_of_season_player_stats(player_type, cols=cols, schedule=schedule)
+    bios = get_bios()
+    X_p = X_p.merge(bios, on='playerId', how='left').set_index(X_p.index)
+    
+    X_proj = get_projections()
+    X_p['season'] = X_p.index.get_level_values('gameId') // (1000*1000)
+    X_p = X_p.merge(X_proj, left_on=['name', 'season'], right_on=['player', 'season'], how='left').set_index(X_p.index)
+    X = X.drop(['playerId','name','player'], axis=1)
     return X_p, y

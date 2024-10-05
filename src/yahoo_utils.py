@@ -1,12 +1,14 @@
 import pandas as pd
 from yfpy.query import YahooFantasySportsQuery
 
-league_id = 21834
-
+league_ids = {
+     427:21834,
+     453: 15482
+}
 def get_q(game_id):
     q = YahooFantasySportsQuery(
         game_id = game_id,
-        league_id = league_id,
+        league_id = league_ids[game_id],
         game_code = 'nhl',
         auth_dir = '/home/jupyter/creds',
         browser_callback = False,
@@ -81,7 +83,9 @@ def get_gameweek(date):
     import requests
     games = []
     url = f'https://api-web.nhle.com/v1/schedule/{date}'
+    print(url)
     r = requests.get(url)
+    print(r.status_code)
     if r.status_code != 200:
         print(r.text)
     data = r.json()
@@ -106,14 +110,22 @@ def get_schedule(dates):
     return games
 
 import json
+import pickle
 
 def get_games_by_week(game_id):
-    q = get_q(game_id)
-    gweeks = q.get_game_weeks_by_game_id(game_id)
-    weekly_schedule = {}
-    for week in gweeks:
-        dates = pd.date_range(week.start, week.end)
-        weekly_schedule[week.display_name] = get_schedule(dates)
+    filepath = f'data/schedule{game_id}.pickle'
+    if not os.path.isfile(filepath):
+        q = get_q(game_id)
+        weeks = q.get_game_weeks_by_game_id(game_id)
+        weekly_schedule = {}
+        for week in gweeks:
+            dates = pd.date_range(week.start, week.end)
+            weekly_schedule[week.display_name] = get_schedule(dates)
+        with open(filepath, 'wb') as f:
+            pickle.dump(weekly_schedule, f)
+    else:
+        with open(filepath, 'rb') as f:
+            weekly_schedule = pickle.load(f)
 
     return weekly_schedule
 
@@ -153,9 +165,9 @@ def get_initial_teams(game_id):
         teams[p.team_key].append(p.player_key)
     return teams
 
-def get_teams(game_id):
+def get_teams(game_id, force=False):
     filepath = f'data/teams{game_id}.csv'
-    if not os.path.isfile(filepath):
+    if not os.path.isfile(filepath) or force:
         q = get_q(game_id)
         s = q.get_league_settings()
         weeks = q.get_game_weeks_by_game_id(game_id)
