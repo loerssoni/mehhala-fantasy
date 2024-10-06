@@ -55,14 +55,14 @@ def run_fselection(X, y):
 import json
 
 def load_player_feature_map(player_type, data=None):
-    player_feature_map_file = f'data/{player_type}_player_features.json'
+    player_feature_map_file = f'data/{player_type}_player_features2.json'
     try:
         with open(player_feature_map_file, 'r') as f:
             player_features_map = json.loads(f.read())
     except FileNotFoundError:
         print('File not found. Fitting...')
         if data is None:
-            X_p, y = get_player_stats(player_type)
+            X_p, y = get_rest_of_season_player_stats(player_type)
         else:
             X_p, y = data
         print('Data loaded')
@@ -73,27 +73,6 @@ def load_player_feature_map(player_type, data=None):
         with open(player_feature_map_file, 'w') as f:
             f.write(json.dumps(player_features_map))
     return player_features_map
-
-
-def load_feature_maps(player_type='skater'):
-    player_features_map = load_player_feature_map(player_type)
-    feature_map_file = f'data/full_{player_type}_features.json'
-    try:
-        with open(feature_map_file, 'r') as f:
-            full_features_map = json.loads(f.read())
-    except FileNotFoundError:
-        print('File not found. Fitting...')
-        full_features_map = {}
-        
-        for col in PRED_COLS[player_type]:
-            print(f'Fitting for {col}')
-            X_p, y = get_weekly_stats(player_type, cols=player_features_map[col][0])       
-            print('Loaded data')
-            full_features_map[col] = forward_feature_selection_with_elimination(X_p, y, col)
-        with open(feature_map_file, 'w') as f:
-            f.write(json.dumps(full_features_map))
-            
-    return full_features_map, player_features_map
 
 def run_simple_training(player_features_map, data=None, player_type=None):
     from sklearn.ensemble import HistGradientBoostingRegressor
@@ -129,8 +108,8 @@ def run_simple_training(player_features_map, data=None, player_type=None):
     return pipes
 
 def get_simple_pipelines(data_p=None, data_g=None):
-    skater_models_file = 'data/models_skater2.pkl'
-    player_features_map = load_player_feature_map('skater2')
+    skater_models_file = 'data/models_skater3.pkl'
+    player_features_map = load_player_feature_map('skater', data=data_p)
     try:
         with open(skater_models_file, 'rb') as f:
             pipes = pickle.load(f)
@@ -140,9 +119,9 @@ def get_simple_pipelines(data_p=None, data_g=None):
     with open(skater_models_file, 'wb') as f:
         pickle.dump(pipes, f)
     
-    g_player_features_map = load_player_feature_map('goalie2')
+    g_player_features_map = load_player_feature_map('goalie', data=data_g)
     
-    goalie_models_file = 'data/models_goalie2.pkl'
+    goalie_models_file = 'data/models_goalie3.pkl'
     try:
         with open(goalie_models_file, 'rb') as f:
             g_pipes = pickle.load(f)

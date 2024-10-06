@@ -1,0 +1,9 @@
+beautifulsoup4==4.12.3
+numpy==2.1.1
+pandas==2.2.3
+scikit-learn==1.5.2
+scipy==1.14.1
+tables==3.10.1
+urllib3==2.2.3
+yahoo_oauth==2.0
+-e git+https://github.com/uberfastman/yfpy.git@6a9f62b915fd43ce5d5e5719193801ec5aa849ac#egg=yfpy
