@@ -7,3 +7,4 @@ tables==3.10.1
 urllib3==2.2.3
 yahoo_oauth==2.0
 git+https://github.com/loerssoni/yfpy.git
+google-cloud-storage
