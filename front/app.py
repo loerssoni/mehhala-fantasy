@@ -2,10 +2,15 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import os
+
+project_id = os.environ['GOOGLE_CLOUD_PROJECT']
+
+# Read file from Google Cloud Storage
+player_data = pd.read_csv('gs://{}.appspot.com/player_data.csv'.format(project_id))
+team_data = pd.read_csv('gs://{}.appspot.com/team_data.csv'.format(project_id))
 
 st.subheader("Mehhala Fantasy")
-player_data = pd.read_csv('player_data.csv')
-team_data = pd.read_csv('team_data.csv')
 
 tab1, tab2 = st.tabs(["Player predictions", "Team comparison"])
 with tab1:
