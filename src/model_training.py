@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.linear_model import LassoCV, LinearRegression
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import cross_val_score
-from process_data import get_player_stats, get_weekly_stats, get_rest_of_season_player_stats, PRED_COLS
+from process_data import get_rest_of_season_player_stats, PRED_COLS
 import pickle
 
 def forward_feature_selection_with_elimination(X, y, col, tol=1e-4, cv=3):
@@ -149,79 +149,6 @@ def get_simple_pipelines(data_p=None, data_g=None):
     except FileNotFoundError:
         g_pipes =  run_simple_training(g_player_features_map, data=data_g, player_type='goalie')
         
-    with open(goalie_models_file, 'wb') as f:
-        pickle.dump(g_pipes, f)
-    
-    return {'goalie':g_pipes, 'skater':pipes}
-
-
-def run_training(player_type, full_features_map, player_features_map, schedule=None, retrain=False):
-    from sklearn.ensemble import HistGradientBoostingRegressor
-    from sklearn.linear_model import LassoCV, Lasso
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.pipeline import Pipeline
-    
-    import numpy as np
-    from sklearn.metrics import r2_score, mean_absolute_error
-
-    
-    pipes = {}
-    for c in PRED_COLS[player_type]:
-        pipe = Pipeline([
-            ('scl', StandardScaler()),
-            ('reg', Lasso(alpha=3e-3))
-        ])
-        
-        X, y = get_weekly_stats(player_type, cols=player_features_map[c][0], schedule=schedule)
-        
-        X = X[X.index.isin(y.index)].copy()
-        y = y.loc[X.index].copy()
-
-        if schedule is not None:
-            min_date = min([g['ts'] for w in schedule.values() for g in w])
-            X_dates = pd.to_datetime(X.index.get_level_values('gameDate'), format='%Y%m%d').date
-            train_idx = X_dates < min_date
-        else:
-            train_idx = X.index.get_level_values('gameId').astype(int) < 2023020800
-
-        X = X[full_features_map[c][0]].copy()
-        pipe.fit(X.loc[train_idx], y[train_idx][c])
-        preds = np.clip(pipe.predict(X[~train_idx]), 0, np.inf)
-        score = r2_score(y[~train_idx][c], preds)
-        print(c, '--', score)
-        mae = mean_absolute_error(y[~train_idx][c], preds)
-        print(c, '--', mae)
-        if retrain:
-            if schedule is not None:
-                X, y = get_weekly_stats(player_type, cols=player_features_map[c][0], schedule=None)
-                X = X.loc[X.index.isin(y.index), full_features_map[c][0]].copy()
-                y = y.loc[X.index].copy()
-
-            pipe.fit(X, y[c])
-        pipes[c] = pipe
-    return pipes
-
-def get_pipelines():
-    skater_models_file = 'data/models_skater.pkl'
-    full_features_map, player_features_map = load_feature_maps('skater')
-    try:
-        with open(skater_models_file, 'rb') as f:
-            pipes = pickle.load(f)
-    except FileNotFoundError:
-        pipes = run_training('skater', full_features_map, player_features_map, retrain=True)
-    
-    with open(skater_models_file, 'wb') as f:
-        pickle.dump(pipes, f)
-    
-    goalie_features_map, g_player_features_map = load_feature_maps('goalie')
-    
-    goalie_models_file = 'data/models_goalie.pkl'
-    try:
-        with open(goalie_models_file, 'rb') as f:
-            g_pipes = pickle.load(f)
-    except FileNotFoundError:
-        g_pipes = run_training('goalie', goalie_features_map, g_player_features_map, retrain=True)
-    
     with open(goalie_models_file, 'wb') as f:
         pickle.dump(g_pipes, f)
     

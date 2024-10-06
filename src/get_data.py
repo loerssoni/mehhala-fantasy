@@ -41,15 +41,15 @@ def load_player_data(start_season, end_season, filename, player_type):
 
 def load_history():
     filename = 'data/gamebygame21.h5'
-    load_player_data(2021, 2023, filename, 'skaters')
+    load_player_data(2021, 2024, filename, 'skaters')
     filename = 'data/goalies21.h5'
-    load_player_data(2021, 2023, filename, 'goalies')
+    load_player_data(2021, 2024, filename, 'goalies')
 
 def load_current():
     filename = 'data/gamebygame24.h5'
-    load_player_data(2023, 2024, filename, 'skaters')
+    load_player_data(2024, 2025, filename, 'skaters')
     filename = 'data/goalies24.h5'
-    load_player_data(2023, 2024, filename, 'goalies')
+    load_player_data(2024, 2025, filename, 'goalies')
 
 def combine_history():
     import pandas as pd
@@ -88,7 +88,7 @@ def process_y():
     for k, v in ys.items():
         ys[k] = df[v].sum(1)
     ys = pd.DataFrame(ys)
-    print('Processed y, writing to csv')
+    print('Processed y, writing to file')
     ys.to_hdf('data/y.h5', key='data')
     
 
@@ -139,7 +139,7 @@ def process_y():
     ys['icetime'] /= 360
     ys = pd.DataFrame(ys)
     
-    print('Processed y, writing to csv')
+    print('Processed y, writing to file')
     ys.to_hdf('data/y_g.h5', key='data')
     y_df = y_df.drop(['season','home_or_away','name'], axis=1)
     y_df.to_hdf('data/games_g.h5', key='data')
@@ -153,7 +153,7 @@ def load_bios():
     r = requests.get(url)
     s = io.StringIO(r.text)
     df = pd.read_csv(s)
-    print('Loaded bios, writing to csv.')
+    print('Loaded bios, writing to file.')
     df.to_hdf('data/bios.h5', key='data', index=False)
 
 
