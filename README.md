@@ -13,6 +13,7 @@ gcloud app deploy
 #### Backend script
 
 ```
+chmod +x filename.sh
 ./build.sh
 ```
 
