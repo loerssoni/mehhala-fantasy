@@ -226,20 +226,5 @@ def main():
     ss = ss.sort_values(['own','matchup'], ascending=False)
     ss.to_csv('data/team_data.csv')
 
-    from google.cloud import storage
-    def upload_blob_from_memory(bucket_name, contents, destination_blob_name):
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(destination_blob_name)
-        blob.upload_from_string(contents)
-
-    def upload_df(df, bucket_name, destination_blob_name):
-        contents = df.to_csv(encoding = 'utf8', index=False)
-        upload_blob_from_memory(bucket_name, contents, destination_blob_name)
-
-    upload_df(output, 'mehhala-fantasy.appspot.com', 'player_data.csv')
-    upload_df(ss, 'mehhala-fantasy.appspot.com', 'team_data.csv')
-    upload_df(output, 'mehhala-fantasy.appspot.com', f'archive/player_data{date_now}.csv')
-    upload_df(ss, 'mehhala-fantasy.appspot.com', f'archive/team_data{date_now}.csv')
 if __name__ == '__main__':
     main()
