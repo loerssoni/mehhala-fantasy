@@ -1,16 +1,22 @@
 import pandas as pd
 from yfpy.query import YahooFantasySportsQuery
+import json
+with open('../creds/token.json', 'r') as f:
+    yahoo_access_token = json.loads(f.read())
+
+
 
 league_ids = {
      427:21834,
      453: 15482
 }
+          
 def get_q(game_id):
     q = YahooFantasySportsQuery(
         game_id = game_id,
         league_id = league_ids[game_id],
         game_code = 'nhl',
-        auth_dir = '~/mehhala-fantasy/creds',
+        yahoo_access_token_json = yahoo_access_token,
         browser_callback = False,
     )
     return q
