@@ -10,7 +10,7 @@ def get_q(game_id):
         game_id = game_id,
         league_id = league_ids[game_id],
         game_code = 'nhl',
-        auth_dir = '/home/jupyter/creds',
+        auth_dir = '/creds',
         browser_callback = False,
     )
     return q
