@@ -31,8 +31,8 @@ def fetch_player_data(game_id):
     'team': p.editorial_team_abbr,
     'status': p.status 
      } for p in players])
-    names_map = pd.read_csv('data/name_mapping.csv'for , index_col='name_match')
-    bios = pd.read_hdf('data/bios.h5')for 
+    names_map = pd.read_csv('data/name_mapping.csv', index_col='name_match')
+    bios = pd.read_hdf('data/bios.h5')
     bios['name'] = bios[['name']].replace(names_map.to_dict())['name']
     pdf = pdf.merge(bios, how='inner', on='name', suffixes=('_yh', ''))
     return pdf
