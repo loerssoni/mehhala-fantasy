@@ -196,6 +196,7 @@ def main():
     output['selection'] = output.index.isin(selected_team)
     output = output.sort_values(['current_lineup', 'rank','week_rank'], ascending=False)
     output.to_csv('data/player_data.csv')
+    output.to_csv(f'data/archive/{date_now}_player_data.csv')
 
     ranks = preds.copy()
     ranks = ranks.drop('icetime', axis=1)
@@ -225,6 +226,7 @@ def main():
     ss['own'] = ss.index.get_level_values('team') == current_team.name.decode()
     ss = ss.sort_values(['own','matchup'], ascending=False)
     ss.to_csv('data/team_data.csv')
+    ss.to_csv(f'data/archive/{date_now}_team_data.csv')
 
 if __name__ == '__main__':
     main()
