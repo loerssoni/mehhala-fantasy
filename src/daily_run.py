@@ -239,6 +239,7 @@ def main():
 
     upload_df(output, 'mehhala-fantasy.appspot.com', 'player_data.csv')
     upload_df(ss, 'mehhala-fantasy.appspot.com', 'team_data.csv')
-    
+    upload_df(output, 'mehhala-fantasy.appspot.com', f'archive/player_data{date_now}.csv')
+    upload_df(ss, 'mehhala-fantasy.appspot.com', f'archive/team_data{date_now}.csv')
 if __name__ == '__main__':
     main()
