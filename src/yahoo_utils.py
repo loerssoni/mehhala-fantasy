@@ -31,8 +31,8 @@ def fetch_player_data(game_id):
     'team': p.editorial_team_abbr,
     'status': p.status 
      } for p in players])
-    names_map = pd.read_csv('data/name_mapping.csv', index_col='name_match')
-    bios = pd.read_hdf('data/bios.h5')
+    names_map = pd.read_csv('data/name_mapping.csv'for , index_col='name_match')
+    bios = pd.read_hdf('data/bios.h5')for 
     bios['name'] = bios[['name']].replace(names_map.to_dict())['name']
     pdf = pdf.merge(bios, how='inner', on='name', suffixes=('_yh', ''))
     return pdf
@@ -124,7 +124,7 @@ def get_games_by_week(game_id):
         q = get_q(game_id)
         weeks = q.get_game_weeks_by_game_id(game_id)
         weekly_schedule = {}
-        for week in gweeks:
+        for week in weeks:
             dates = pd.date_range(week.start, week.end)
             weekly_schedule[week.display_name] = get_schedule(dates)
         with open(filepath, 'wb') as f:
