@@ -117,8 +117,6 @@ def main():
     ir = []
     current_lineup = teams[(teams.team_id == current_team.team_key)&(teams.index.get_level_values('date') == date_now.strftime('%Y-%m-%d'))&(~teams.player_key.isin(ir))]
     current_lineup = current_lineup.merge(players, how='left', on='player_key').playerId.tolist()
-    current_lineup.remove(8478445)
-    current_lineup.append(8477935)
 
     selected_team = []
 
