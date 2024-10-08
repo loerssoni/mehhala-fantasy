@@ -1,4 +1,6 @@
-streamlit
+dash
+dash-bootstrap-components
+dash-table
 pandas
-google-cloud-storage
-gcsfs
+numpy
+gunicorn
