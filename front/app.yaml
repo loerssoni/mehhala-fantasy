@@ -3,7 +3,7 @@ env: standard
 
 runtime: python312
 
-entrypoint: entrypoint: gunicorn -b 0.0.0.0:$PORT main:server
+entrypoint: gunicorn -b 0.0.0.0:$PORT app:srv
 
 automatic_scaling:
   min_num_instances: 1
