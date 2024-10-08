@@ -1,10 +1,7 @@
-# import dash-core, dash-html, dash io, bootstrap
 import os
 
-import dash_core_components as dcc
-import dash_html_components as html
 from dash.dependencies import Input, Output
-
+from dash import dcc, html
 # Dash Bootstrap components
 import dash_bootstrap_components as dbc
 
@@ -14,13 +11,12 @@ from app import app
 # Import server for deployment
 from app import srv as server
 
+import dash_table
 from data import skater_data, goalie_data, team_season_data, team_week_data
 
 
 app_name = os.getenv("DASH_APP_PATH", "/mehhala-fantasy")
 
-# Layout variables, navbar, header, content, and container
-nav = Navbar()
 
 # Layout for Team Analysis page
 tableLayout = html.Div(
@@ -65,26 +61,37 @@ header = dbc.Row(
 
 container = dbc.Container([header, tabs])
 
-    
-
-
-@callback(Output("team-data", "children"),
+@app.callback(Output("team-data", "children"),
           Input('page-selection', 'value'))
 def render_content(tab):
     if tab == 'skater_data':
-        return skater_data
-    if tab == 'goalie_data':
-        return goalie_data
-    if tab == 'team_season_data':
-        return team_season_data
-    if tab == 'team_week_data':
-        return team_week_data
-
+        data_asset = skater_data
+    elif tab == 'goalie_data':
+        data_asset = goalie_data
+    elif tab == 'team_season_data':
+        data_asset = team_season_data
+    elif tab == 'team_week_data':
+        data_asset = team_week_data
+    return html.Div(
+            dash_table.DataTable(
+                data=data_asset.to_dict("records"),
+                columns=[{"name": col, "id": col} for col in data_asset.columns],
+                style_as_list_view=True,
+                editable=False,
+                style_table={
+                    "overflowY": "scroll",
+                    "width": "100%",
+                    "minWidth": "100%",
+                },
+                style_header={"backgroundColor": "#f8f5f0", "fontWeight": "bold"},
+                style_cell={"textAlign": "center", "padding": "8px"},
+            )
+        )
 
 
 # Main index function that will call and return all layout variables
 def index():
-    layout = html.Div([nav, container])
+    layout = html.Div([container])
     return layout
 
 
