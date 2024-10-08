@@ -72,7 +72,8 @@ def render_content(tab):
     return html.Div(
             [dag.AgGrid(
                 rowData=data_asset.to_dict("records"),
-                columnDefs=[{"field":col} for col in data_asset.columns]
+                columnDefs=[{"field":col} for col in data_asset.columns],
+		columnSize='autoSize'
             )]
         )
 
