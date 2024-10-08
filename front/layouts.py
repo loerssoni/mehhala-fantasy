@@ -12,8 +12,10 @@ from app import app
 from app import srv as server
 
 import dash_table
+import dash_ag_grid as dag
 from data import skater_data, goalie_data, team_season_data, team_week_data
 
+import pandas as pd
 
 app_name = os.getenv("DASH_APP_PATH", "/mehhala-fantasy")
 
@@ -21,16 +23,10 @@ app_name = os.getenv("DASH_APP_PATH", "/mehhala-fantasy")
 # Layout for Team Analysis page
 tableLayout = html.Div(
     [
-        dbc.Row(dbc.Col(html.H3(children="Data"))),
-        # Display Championship titles in datatable
+
         dbc.Row(
             dbc.Col(
-                html.Div(id="team-data"),
-                xs={"size": "auto", "offset": 0},
-                sm={"size": "auto", "offset": 0},
-                md={"size": 7, "offset": 0},
-                lg={"size": "auto", "offset": 0},
-                xl={"size": "auto", "offset": 0},
+                html.Div(id="team-data")
             ),
             justify="center",
         )
@@ -64,6 +60,7 @@ container = dbc.Container([header, tabs])
 @app.callback(Output("team-data", "children"),
           Input('page-selection', 'value'))
 def render_content(tab):
+    data_asset = pd.DataFrame({})
     if tab == 'skater_data':
         data_asset = skater_data
     elif tab == 'goalie_data':
@@ -73,19 +70,10 @@ def render_content(tab):
     elif tab == 'team_week_data':
         data_asset = team_week_data
     return html.Div(
-            dash_table.DataTable(
-                data=data_asset.to_dict("records"),
-                columns=[{"name": col, "id": col} for col in data_asset.columns],
-                style_as_list_view=True,
-                editable=False,
-                style_table={
-                    "overflowY": "scroll",
-                    "width": "100%",
-                    "minWidth": "100%",
-                },
-                style_header={"backgroundColor": "#f8f5f0", "fontWeight": "bold"},
-                style_cell={"textAlign": "center", "padding": "8px"},
-            )
+            [dag.AgGrid(
+                rowData=data_asset.to_dict("records"),
+                columnDefs=[{"field":col} for col in data_asset.columns]
+            )]
         )
 
 

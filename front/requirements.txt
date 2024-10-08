@@ -4,3 +4,6 @@ dash-table
 pandas
 numpy
 gunicorn
+gcsfs
+fsspec
+dash-ag-grid

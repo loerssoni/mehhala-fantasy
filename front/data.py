@@ -1,4 +1,6 @@
 import pandas as pd
+
+project_id = 'mehhala-fantasy'
 # Read file from Google Cloud Storage
 player_data = pd.read_csv('gs://{}.appspot.com/player_data.csv'.format(project_id))
 team_data = pd.read_csv('gs://{}.appspot.com/team_data.csv'.format(project_id))
