@@ -96,9 +96,9 @@ def main():
 
 
 
-    date_now = pd.Timestamp.now().date()
+    date_now = pd.Timestamp.now(tz='America/Los_Angeles').date()
     cats = ['g','a','sog','fow','hit','block','pim','plusmin','ga','win','so','save']
-    m = [m for m in current_team.matchups if pd.to_datetime(m.week_end).date() >= date_now + pd.Timedelta('2d')][0]
+    m = [m for m in current_team.matchups if pd.to_datetime(m.week_end).date() > date_now + pd.Timedelta('1d')][0]
     print(m.week)
     opponent_id = [t.team_key for t in m.teams if t.team_key != current_team.team_key][0]
     dates = pd.date_range(max(pd.to_datetime(m.week_start).date(), date_now), m.week_end)
@@ -131,7 +131,7 @@ def main():
         all_available_players = players[(~players.player_key.isin(starting_teams.player_key))|(players.playerId.isin(current_lineup))]
         all_available_players = all_available_players.playerId.tolist()
 
-        week_games = player_games[(player_games.ts >= date)&(player_games.ts <= m.week_end)]
+        week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
 
 
 
