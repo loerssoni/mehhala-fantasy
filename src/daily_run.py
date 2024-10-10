@@ -115,7 +115,7 @@ def main():
 
     ir = [p.player_key for t in info for p in t.roster.players if p.selected_position.date == date_now.strftime('%Y-%m-%d') and 'IR' in p.selected_position.position]
     ir = []
-    current_lineup = teams[(teams.team_id == current_team.team_key)&(teams.index.get_level_values('date') == date_now.strftime('%Y-%m-%d'))&(~teams.player_key.isin(ir))]
+    current_lineup = teams[(teams.team_id == current_team.team_key)&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))&(~teams.player_key.isin(ir))]
     current_lineup = current_lineup.merge(players, how='left', on='player_key').playerId.tolist()
 
     selected_team = []
@@ -127,7 +127,7 @@ def main():
         #     current_lineup = [p for p in selected_team] # this is inactive since we use our existing lineup as starting point for each day of the week
             selected_team = []
 
-        starting_teams = teams.loc[(pd.to_datetime(teams.index) == date)]
+        starting_teams = teams.loc[(pd.to_datetime(teams.index) == (date + pd.Timedelta('1d')))]
         all_available_players = players[(~players.player_key.isin(starting_teams.player_key))|(players.playerId.isin(current_lineup))]
         all_available_players = all_available_players.playerId.tolist()
 
@@ -144,7 +144,7 @@ def main():
             else:
                 available = [p for p in all_available_players if p not in selected_team]
 
-            rest_games = lineup_utils.get_rest_of_season_games(date, player_games, selected_team, position_lookup)
+            rest_games = lineup_utils.get_rest_of_season_games((date + pd.Timedelta('1d')), player_games, selected_team, position_lookup)
             stats_available = rest_games[rest_games.index.isin(preds.index)].index
             lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available])
             preds_st = ((lineup_preds - lineup_preds.mean())/(lineup_preds.std()))
