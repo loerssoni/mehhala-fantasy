@@ -135,7 +135,7 @@ def main():
 
 
 
-        while len(selected_team) < 35:
+        while len(selected_team) < 50:
             print(str(len(selected_team)), end='\r')
 
             if len(selected_team) < 14:
@@ -164,7 +164,7 @@ def main():
                 rankings.append({'playerId':selected_player, 'rank': round(ranks.loc[selected_player], 3), 'week_rank': round(week_ranks.loc[selected_player], 3), 'games':rest_games.loc[selected_player], 'week_games':week_rest_games.loc[selected_player]})
 
             else:
-                rest_of_them = ranks[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(35-len(selected_team))].index.tolist()
+                rest_of_them = ranks[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(50-len(selected_team))].index.tolist()
                 for p in rest_of_them:
                     rankings.append({'playerId':p, 'rank': round(ranks.loc[p], 3), 'week_rank': round(week_ranks.loc[p], 3), 'games':rest_games.loc[p], 'week_games':week_rest_games.loc[p]})
                 selected_team += rest_of_them
