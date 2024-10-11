@@ -161,17 +161,46 @@ def main():
             if len(selected_team) < 14:
                 selected_player = ranks.loc[[p for p in available if p in ranks]].idxmax()
                 selected_team.append(selected_player)
-                rankings.append({'playerId':selected_player, 'rank': round(ranks.loc[selected_player], 3), 'week_rank': round(week_ranks.loc[selected_player], 3), 'games':rest_games.loc[selected_player], 'week_games':week_rest_games.loc[selected_player]})
+                data_dict = {'playerId':selected_player, 
+                             'rank': round(ranks.loc[selected_player], 3), 
+                             'games':rest_games.loc[selected_player]}
+                if selected_player in week_stats_available:
+                    data_dict['week_rank'] = round(week_ranks.loc[selected_player], 3)
+                    data_dict['week_games'] = week_rest_games.loc[selected_player]
+                else:
+                    data_dict['week_rank'] = 0
+                    data_dict['week_games'] = 0
+                rankings.append(data_dict)
 
             else:
                 rest_of_them = ranks[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(50-len(selected_team))].index.tolist()
                 for p in rest_of_them:
-                    rankings.append({'playerId':p, 'rank': round(ranks.loc[p], 3), 'week_rank': round(week_ranks.loc[p], 3), 'games':rest_games.loc[p], 'week_games':week_rest_games.loc[p]})
+                    data_dict = {'playerId':p, 
+                             'rank': round(ranks.loc[p], 3), 
+                             'games':rest_games.loc[p]}
+                    if p in week_stats_available:
+                        data_dict['week_rank'] = round(week_ranks.loc[p], 3)
+                        data_dict['week_games'] = week_rest_games.loc[p]
+                    else:
+                        data_dict['week_rank'] = 0
+                        data_dict['week_games'] = 0
+                    rankings.append(data_dict)
+
                 selected_team += rest_of_them
 
         for p in current_lineup:
             if p not in selected_team:
-                rankings.append({'playerId':p, 'rank': round(ranks.loc[p], 3), 'week_rank': round(week_ranks.loc[p], 3), 'games':rest_games.loc[p], 'week_games':week_rest_games.loc[p]})
+                data_dict = {'playerId':p, 
+                             'rank': round(ranks.loc[p], 3), 
+                             'games':rest_games.loc[p]}
+                if p in week_stats_available:
+                    data_dict['week_rank'] = round(week_ranks.loc[p], 3)
+                    data_dict['week_games'] = week_rest_games.loc[p]
+                else:
+                    data_dict['week_rank'] = 0
+                    data_dict['week_games'] = 0
+                rankings.append(data_dict)
+                                
         rankings = pd.DataFrame(rankings).set_index('playerId')
 
         n_games = week_rest_games[week_rest_games.index.isin(preds.index)]
