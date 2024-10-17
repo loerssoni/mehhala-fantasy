@@ -97,7 +97,7 @@ def main():
 
 
     date_now = pd.Timestamp.now(tz='America/Los_Angeles').date()
-    cats = ['g','a','sog','fow','hit','block','pim','plusmin','ga','win','so','save']
+    cats = ['g','a','sog','fow','hit','block','pim','plusmin','ppp', 'ga','win','so','save']
     m = [m for m in current_team.matchups if pd.to_datetime(m.week_end).date() > date_now + pd.Timedelta('1d')][0]
     print(m.week)
     opponent_id = [t.team_key for t in m.teams if t.team_key != current_team.team_key][0]
