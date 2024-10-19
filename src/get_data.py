@@ -37,7 +37,7 @@ def load_player_data(start_season, end_season, filename, player_type):
     print('received:', len(dfs), 'csvs of', len(urls))
     if len(dfs) > 0:
         df = pd.concat(dfs)
-        df.to_hdf(filename, 'data', index=False)
+        df.to_hdf(filename, 'data', index=False, mode='w')
 
 def load_history():
     filename = 'data/gamebygame21.h5'
@@ -56,13 +56,13 @@ def combine_history():
     df1 = pd.read_hdf('data/gamebygame21.h5', 'data')
     df2 = pd.read_hdf('data/gamebygame24.h5', 'data')
     df1 = pd.concat([df1, df2])
-    df1.to_hdf('data/gamebygame.h5', key='data')
+    df1.to_hdf('data/gamebygame.h5', key='data', mode='w')
 
     del df1, df2
     df1 = pd.read_hdf('data/goalies21.h5', 'data')
     df2 = pd.read_hdf('data/goalies24.h5', 'data')
     df1 = pd.concat([df1, df2])
-    df1.to_hdf('data/goalies.h5', key='data')
+    df1.to_hdf('data/goalies.h5', key='data', mode='w')
     
 
 def process_y():
@@ -71,7 +71,7 @@ def process_y():
 
     df = df.pivot(index=INDEX_COLS, columns=['situation'], values=df.columns[11:])
     df.columns = [f'{s[1]}_{s[0]}' for s in df.columns]
-    df.to_hdf('data/games_p.h5', key='data')
+    df.to_hdf('data/games_p.h5', key='data', mode='w')
     
     ys = {
         'g': ['all_I_F_goals'],
@@ -89,7 +89,7 @@ def process_y():
         ys[k] = df[v].sum(1)
     ys = pd.DataFrame(ys)
     print('Processed y, writing to file')
-    ys.to_hdf('data/y.h5', key='data')
+    ys.to_hdf('data/y.h5', key='data', mode='w')
     
 
 
@@ -140,9 +140,9 @@ def process_y():
     ys = pd.DataFrame(ys)
     
     print('Processed y, writing to file')
-    ys.to_hdf('data/y_g.h5', key='data')
+    ys.to_hdf('data/y_g.h5', key='data', mode='w')
     y_df = y_df.drop(['season','home_or_away','name'], axis=1)
-    y_df.to_hdf('data/games_g.h5', key='data')
+    y_df.to_hdf('data/games_g.h5', key='data', mode='w')
     
 
 def load_bios():
@@ -154,7 +154,7 @@ def load_bios():
     s = io.StringIO(r.text)
     df = pd.read_csv(s)
     print('Loaded bios, writing to file.')
-    df.to_hdf('data/bios.h5', key='data', index=False)
+    df.to_hdf('data/bios.h5', key='data', index=False, mode='w')
 
 
 def load_team_data():
@@ -165,5 +165,5 @@ def load_team_data():
     r = requests.get(url)
     s = io.StringIO(r.text)
     df = pd.read_csv(s)
-    df.to_hdf('data/teams.h5', key='data', index=False)
+    df.to_hdf('data/teams.h5', key='data', index=False, mode='w')
 
