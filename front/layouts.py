@@ -44,6 +44,17 @@ tabs = html.Div([
     tableLayout
 ])
 
+# Div to hide/show the checkbox (hidden by default)
+checkbox = html.Div(id="checkbox-container", children=[
+        dcc.Checklist(
+            id='available-checkbox',
+            options=[{'label': 'Only Show Available', 'value': 'available'}],
+            value=[],  # Initially unchecked
+            style={'marginBottom': 20}
+        )
+    ], style={'display': 'none'})  # Hide by default
+
+
 header = dbc.Row(
     dbc.Col(
         html.Div(
@@ -55,12 +66,17 @@ header = dbc.Row(
     className="banner",
 )
 
-container = dbc.Container([header, tabs])
+container = dbc.Container([header, tabs, checkbox])
 
-@app.callback(Output("team-data", "children"),
-          Input('page-selection', 'value'))
-def render_content(tab):
+@app.callback(
+    Output("team-data", "children"),
+    [Input('page-selection', 'value'),
+     Input('available-checkbox', 'value')]  # Capture the state of the checkbox
+)
+def render_content(tab, available_filter):
     data_asset = pd.DataFrame({})
+    
+    # Load data based on the selected tab
     if tab == 'skater_data':
         data_asset = skater_data
     elif tab == 'goalie_data':
@@ -69,13 +85,30 @@ def render_content(tab):
         data_asset = team_season_data
     elif tab == 'team_week_data':
         data_asset = team_week_data
+    
+    # Apply filter if 'is_available' checkbox is checked and tab is skater_data or goalie_data
+    if tab in ['skater_data', 'goalie_data'] and 'available' in available_filter:
+        data_asset = data_asset[data_asset['is_available'] == True]
+
+    # Return the table layout
     return html.Div(
             [dag.AgGrid(
                 rowData=data_asset.to_dict("records"),
-                columnDefs=[{"field":col} for col in data_asset.columns],
-		columnSize='autoSize'
+                columnDefs=[{"field": col} for col in data_asset.columns],
+                columnSize='autoSize'
             )]
         )
+
+@app.callback(
+    Output("checkbox-container", "style"),
+    Input('page-selection', 'value')
+)
+def toggle_checkbox_visibility(tab):
+    # Show the checkbox only for skater_data or goalie_data tabs
+    if tab in ['skater_data', 'goalie_data']:
+        return {'display': 'block'}  # Show checkbox
+    else:
+        return {'display': 'none'}  # Hide checkbox
 
 
 # Main index function that will call and return all layout variables
