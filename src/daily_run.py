@@ -185,7 +185,8 @@ def main():
 
             data_dict = {'playerId':selected_player, 
                          'rank': round(ranks_season.loc[selected_player], 3), 
-                         'games':rest_games.loc[selected_player]}
+                         'games':rest_games.loc[selected_player], 
+                         'is_available': True}
             if selected_player in week_stats_available:
                 data_dict['week_rank'] = round(week_ranks.loc[selected_player], 3)
                 data_dict['week_games'] = week_rest_games.loc[selected_player]
@@ -196,7 +197,8 @@ def main():
 
         else:
             rest_of_them = ranks_season[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(50-len(selected_team))].index.tolist()
-            for p in rest_of_them:
+            best_taken = ranks_season[[p for p in players.playerId.tolist() if p in stats_available and p not in rest_of_them]].sort_values(ascending=False).iloc[:100].index.tolist()
+            for p in rest_of_them + best_taken:
                 data_dict = {'playerId':p, 
                          'rank': round(ranks_season.loc[p], 3), 
                          'games':rest_games.loc[p]}
@@ -206,6 +208,12 @@ def main():
                 else:
                     data_dict['week_rank'] = 0
                     data_dict['week_games'] = 0
+                if p in rest_of_them:
+                    data_dict['is_available'] = True
+                else:
+                    data_dict['is_available'] = False
+       
+                
                 rankings.append(data_dict)
 
             selected_team += rest_of_them
@@ -214,7 +222,8 @@ def main():
         if p not in selected_team:
             data_dict = {'playerId':p, 
                          'rank': round(ranks_season.loc[p], 3), 
-                         'games':rest_games.loc[p]}
+                         'games':rest_games.loc[p], 
+                         'is_available': True}
             if p in week_stats_available:
                 data_dict['week_rank'] = round(week_ranks.loc[p], 3)
                 data_dict['week_games'] = week_rest_games.loc[p]
