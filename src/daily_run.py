@@ -177,7 +177,7 @@ def main():
         week_ranks = week_added_vals.sum(1)
         week_ranks.name = 'week_rank'
 
-        if len(selected_team) < 14:
+        if len(selected_team) < 15:
             selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
             selected_team.append(selected_player)
             own_current = (own_current * len(selected_team) + added_vals.loc[selected_player] * (14-len(selected_team))) / 14
@@ -223,6 +223,7 @@ def main():
                 data_dict['week_games'] = 0
             rankings.append(data_dict)
 
+    
     rankings = pd.DataFrame(rankings).set_index('playerId')
 
     n_games = week_rest_games[week_rest_games.index.isin(preds.index)]
@@ -237,15 +238,14 @@ def main():
     for p in selected_team:
         if p not in current_lineup:
             print(player_info.join(n_games).join(rankings).loc[p].to_dict())
+
     
     """
     SAVE DATA
     
     """
-            
-
-    total_values = preds_st[cats].apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
-    output = player_info.join(rankings, how='inner').sort_values(['rank'], ascending=False).join(total_values.round(3))
+    
+    output = player_info.join(rankings, how='inner').sort_values(['rank'], ascending=False).join(preds_st.round(3))
     output['current_lineup'] = output.index.isin(current_lineup)
     output['selection'] = output.index.isin(selected_team)
     output = output.sort_values(['current_lineup', 'rank','week_rank'], ascending=False)
