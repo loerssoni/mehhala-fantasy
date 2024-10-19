@@ -66,7 +66,7 @@ header = dbc.Row(
     className="banner",
 )
 
-container = dbc.Container([header, tabs, checkbox])
+container = dbc.Container([header, tabs])
 
 @app.callback(
     Output("team-data", "children"),
