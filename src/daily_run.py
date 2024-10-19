@@ -197,7 +197,7 @@ def main():
 
         else:
             rest_of_them = ranks_season[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(50-len(selected_team))].index.tolist()
-            best_taken = ranks_season[[p for p in players.playerId.tolist() if p in stats_available and p not in rest_of_them]].sort_values(ascending=False).iloc[:100].index.tolist()
+            best_taken = ranks_season[[p for p in players.playerId.tolist() if p in stats_available and p not in rest_of_them + current_lineup]].sort_values(ascending=False).iloc[:100].index.tolist()
             for p in rest_of_them + best_taken:
                 data_dict = {'playerId':p, 
                          'rank': round(ranks_season.loc[p], 3), 
