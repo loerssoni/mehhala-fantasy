@@ -51,7 +51,7 @@ tabs = html.Div([
         dcc.Tab(label='Team season analysis', value='team_season_data'),
         dcc.Tab(label='Team week analysis', value='team_week_data'),
     ]),
-    checkbox
+    checkbox, 
     table_layout
 ])
 
