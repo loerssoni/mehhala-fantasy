@@ -177,7 +177,7 @@ def main():
         week_ranks = week_added_vals.sum(1)
         week_ranks.name = 'week_rank'
 
-        if len(selected_team) < 15:
+        if len(selected_team) < 14:
             selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
             selected_team.append(selected_player)
             own_current = (own_current * len(selected_team) + added_vals.loc[selected_player] * (14-len(selected_team))) / 14
