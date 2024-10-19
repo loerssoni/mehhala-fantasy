@@ -21,7 +21,7 @@ app_name = os.getenv("DASH_APP_PATH", "/mehhala-fantasy")
 
 
 # Layout for Team Analysis page
-tableLayout = html.Div(
+table_layout = html.Div(
     [
 
         dbc.Row(
@@ -34,16 +34,6 @@ tableLayout = html.Div(
     className="app-page",
 )
 
-tabs = html.Div([
-    dcc.Tabs(id="page-selection", value='tab-1-example-graph', children=[
-        dcc.Tab(label='Skater predictions', value='skater_data'),
-        dcc.Tab(label='Goalie predictions', value='goalie_data'),
-        dcc.Tab(label='Team season analysis', value='team_season_data'),
-        dcc.Tab(label='Team week analysis', value='team_week_data'),
-    ]),
-    tableLayout
-])
-
 # Div to hide/show the checkbox (hidden by default)
 checkbox = html.Div(id="checkbox-container", children=[
         dcc.Checklist(
@@ -54,6 +44,16 @@ checkbox = html.Div(id="checkbox-container", children=[
         )
     ], style={'display': 'none'})  # Hide by default
 
+tabs = html.Div([
+    dcc.Tabs(id="page-selection", value='tab-1-example-graph', children=[
+        dcc.Tab(label='Skater predictions', value='skater_data'),
+        dcc.Tab(label='Goalie predictions', value='goalie_data'),
+        dcc.Tab(label='Team season analysis', value='team_season_data'),
+        dcc.Tab(label='Team week analysis', value='team_week_data'),
+    ]),
+    checkbox
+    table_layout
+])
 
 header = dbc.Row(
     dbc.Col(
