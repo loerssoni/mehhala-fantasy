@@ -243,7 +243,7 @@ def main():
 
 
     rankings = pd.DataFrame(rankings).set_index('playerId')
-    rankings['is_base'] = ranking.index.isin(base)
+    rankings['is_base'] = rankings.index.isin(base)
     n_games = week_rest_games[week_rest_games.index.isin(preds.index)]
     n_games.name = 'n_games'
     print(player_info.loc[current_lineup])
