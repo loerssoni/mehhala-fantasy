@@ -5,7 +5,7 @@ def get_latest_predictions(player_type, windows):
     from process_data import PRED_COLS
 
     X, y, feature_map = get_data_by_windows(player_type, windows, shift=False)
-    skater_latest = X.groupby('playerId').last()
+    X_latest = X.groupby('playerId').last()
     X = X.groupby('playerId').shift(1).dropna()
     y = y.loc[X.index]
 
