@@ -1,6 +1,8 @@
+import pandas as pd
+import logging
 
 def get_latest_predictions(player_type, windows):
-    import pandas as pd
+
     from model_training import get_data_by_windows, get_simple_pipelines
     from process_data import PRED_COLS
 
@@ -25,28 +27,32 @@ def main():
     """
 
     from get_data import load_history, load_current, combine_history, process_y, load_bios, load_team_data
-    import pandas as pd
 
     # load_history()
 
-    load_current()
-    combine_history()
-    load_team_data()
-    load_bios()
-    process_y()
+    #load_current()
+    #combine_history()
+    #load_team_data()
+    #load_bios()
+    #process_y()
 
     """
     GET PREDICTIONS
     """
 
     skater_preds = get_latest_predictions('skater', [30, 15, 10, 5, 3])
+    logging.info('made skater preds')
+    logging.info(skater_preds.shape)
     goalie_preds = get_latest_predictions('goalie', [50, 30, 20, 15, 10, 8, 3, 1])
-
-
+    logging.info('made goalie preds')
+    logging.info(goalie_preds.shape)
+    
     preds = pd.concat([skater_preds, goalie_preds], axis=0)
     preds['plusmin'] = preds['goalsfor'] - preds['goalsaga']
     preds['ga'] = -preds['ga'] / preds['icetime']
-
+    logging.info('preds processed.' ) 
+    logging.info(preds.shape)
+    
     """
     LOAD YAHOO DATA
     """
@@ -74,7 +80,8 @@ def main():
     info = []
     for team in teams.team_id.drop_duplicates():
         info.append(q.get_team_info(team.split('.')[-1]))
-
+    logging.info('Yahoo data loaded')
+    
     """
     CHECK LINEUPS
     """
@@ -115,7 +122,8 @@ def main():
 
     opp_lineup = teams[(teams.team_id == opponent_id)&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
     opp_lineup = opp_lineup.merge(players, how='left', on='player_key').playerId.tolist() 
-
+    logging.info('lineups processed')
+    
     """
     COMPUTE BENCHMARKS
     """
@@ -139,13 +147,13 @@ def main():
         return prob
 
     """
-    MAKE PREDICTIONS
+    MAKE SELECTIONS
     """
     selected_team = []
 
     date = dates[0]
     rankings = []
-    print('\n\n\n', date.date())
+    logging.info(date.date())
 
     all_available_players = players[(~players.player_key.isin(starting_teams.player_key))|(players.playerId.isin(current_lineup))]
     all_available_players = all_available_players.playerId.tolist()
