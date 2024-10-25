@@ -5,6 +5,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import cross_val_score
 from process_data import get_rest_of_season_player_stats, PRED_COLS
 import pickle
+import logging
 
 def forward_feature_selection_with_elimination(X, y, col, tol=1e-4, cv=3):
     X = X.dropna()
@@ -121,7 +122,7 @@ def run_simple_training(player_features_map, data, player_type):
     pipes = {}
     for c in PRED_COLS[player_type]:
         
-        print('fitting', c)
+        logging.info('fitting ' + c)
         lr = Pipeline([
             ('scl', StandardScaler()),
             ('reg', Ridge(alpha=1))
@@ -131,9 +132,9 @@ def run_simple_training(player_features_map, data, player_type):
         preds = pipe.predict(X_test[player_features_map[c]])
         preds = np.clip(preds, 0, np.inf)
         score = r2_score(y_test[c], preds)
-        print(c, '--', score)
+        logging.info(f'{c}--{score}')
         mae = mean_absolute_error(y_test[c], preds)
-        print(c, '--', mae)
+        logging.info(f'{c}--{mae}')
         
         # refit
         pipe.fit(X[player_features_map[c]], y[c])
