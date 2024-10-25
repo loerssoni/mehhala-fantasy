@@ -1,6 +1,7 @@
+import pandas as pd
 def get_latest_predictions(player_type, windows):
     from model_training import get_data_by_windows, get_simple_pipelines
-    from process_data import get_rest_of_season_player_stats, PRED_COLS
+    from process_data import PRED_COLS
 
     X, y, feature_map = get_data_by_windows(player_type, windows, shift=False)
     skater_latest = X.groupby('playerId').last()
@@ -35,8 +36,6 @@ def main():
     """
     GET PREDICTIONS
     """
-
-    import pandas as pd
 
     skater_preds = get_latest_predictions('skater', [50, 30, 20, 15, 10, 8, 3, 1])
     goalie_preds = get_latest_predictions('goalie', [30, 15, 10, 5, 3])
