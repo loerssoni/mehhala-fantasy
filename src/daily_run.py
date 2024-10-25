@@ -14,7 +14,7 @@ def get_latest_predictions(player_type, windows):
     preds = {}
 
     for col in PRED_COLS[player_type]:
-        preds[col] = pipelines[player_type][col].predict(X_latest.dropna()[feature_map[col]])
+        preds[col] = pipelines[col].predict(X_latest.dropna()[feature_map[col]])
     preds_df = pd.DataFrame(preds, index=X_latest.dropna().index)
     return preds_df
 
