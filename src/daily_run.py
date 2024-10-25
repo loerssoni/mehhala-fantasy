@@ -10,9 +10,9 @@ def get_latest_predictions(player_type, windows):
     X_latest = X.groupby('playerId').last()
     X = X.groupby('playerId').shift(1).dropna()
     y = y.loc[X.index]
-
+    logging.info('loaded data')
     pipelines = get_simple_pipelines(player_type, (X, y), feature_map, force_retrain=True)
-
+    logging.info('trained pipelines')
     preds = {}
 
     for col in PRED_COLS[player_type]:
