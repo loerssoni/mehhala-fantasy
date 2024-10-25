@@ -75,12 +75,12 @@ def load_player_feature_map(player_type, data, window=30, force_retrain=False):
             f.write(json.dumps(player_features_map))
     return player_features_map
 
-def get_data_by_windows(player_type, windows=[], force_retrain=False):
+def get_data_by_windows(player_type, windows=[], force_retrain=False, shift=True):
     Xs = []
     full_feature_map = {}
     for window in windows:
         if force_retrain:
-            X, y = get_rest_of_season_player_stats(player_type, window=window)
+            X, y = get_rest_of_season_player_stats(player_type, window=window, shift=shift)
         else:
             X, y = None, None
         
