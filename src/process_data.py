@@ -6,7 +6,7 @@ PRED_COLS = {
     'goalie': ['ga','win','so', 'save', 'icetime']
 }
 
-def get_rest_of_season_player_stats(player_type, cols=None, schedule=None):
+def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=True):
     
     filenames = {
         'skater':('data/games_p.h5','data/y.h5'),
@@ -18,9 +18,12 @@ def get_rest_of_season_player_stats(player_type, cols=None, schedule=None):
     X = X.sort_index(level='gameId')
     if cols is not None:
         X = X[cols].copy()
-    X = X.groupby('playerId', as_index=False).rolling(30).mean().drop('playerId', axis=1)
+    X = X.groupby('playerId', as_index=False).rolling(window).mean().drop('playerId', axis=1)
     y = pd.read_hdf(y_f)
-    X = X.groupby('playerId').shift(1)
+    
+    if shift:
+        X = X.groupby('playerId').shift(1)
+    
     y['date'] = pd.to_datetime(y.index.get_level_values('gameDate'), format='%Y%m%d')
     y['season'] = (y.index.get_level_values('gameId') // 1000000)
     y = y.sort_values('date', ascending=False)
@@ -28,7 +31,7 @@ def get_rest_of_season_player_stats(player_type, cols=None, schedule=None):
     y_r = y_r.set_index(X.index)
     return X, y_r
 
-def get_team_stats(schedule=None):
+def get_team_stats(shift=True):
     df = pd.read_hdf('data/teams.h5')
     df = df.sort_values(['gameId', 'home_or_away'])
     df = df.pivot(index=['team', 'gameId', 'gameDate', 'opposingTeam', 'home_or_away'], columns=['situation'], values=df.columns[11:])
@@ -40,13 +43,11 @@ def get_team_stats(schedule=None):
 
     df = df.groupby('playerTeam', as_index=False).rolling(10, min_periods=5).mean().drop('playerTeam', axis=1)
     
-    if schedule is not None:
-        X_train, X_test = get_schedule_adjusted_stats(df, schedule)
-        X_train = X_train.groupby('playerTeam').shift(1).dropna()
-        X = pd.concat([X_train, X_test])
+    if shift:
+        return df.groupby('playerTeam').shift(1).dropna()
     else:
-        X = df.groupby('playerTeam').shift(1).dropna()
-    return X
+        return df
+    return
 
 def get_bios():
     df = pd.read_hdf('data/bios.h5')
@@ -56,19 +57,3 @@ def get_bios():
     'position_L', 'position_R', 'shootsCatches_L', 'shootsCatches_R']
     X_b = df[ecols]
     return X_b
-
-def get_projections():
-    df = pd.read_csv('data/all_projections.csv')
-    df.columns = df.columns.str.lower()
-    return df
-
-def get_rest_of_season_stats(player_type, cols=None, schedule=None, fillna=True):
-    X_p, y = get_rest_of_season_player_stats(player_type, cols=cols, schedule=schedule)
-    bios = get_bios()
-    X_p = X_p.merge(bios, on='playerId', how='left').set_index(X_p.index)
-    
-    X_proj = get_projections()
-    X_p['season'] = X_p.index.get_level_values('gameId') // (1000*1000)
-    X_p = X_p.merge(X_proj, left_on=['name', 'season'], right_on=['player', 'season'], how='left').set_index(X_p.index)
-    X = X.drop(['playerId','name','player'], axis=1)
-    return X_p, y

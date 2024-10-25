@@ -1,3 +1,22 @@
+def get_latest_predictions(player_type, windows):
+    from model_training import get_data_by_windows, get_simple_pipelines
+    from process_data import get_rest_of_season_player_stats, PRED_COLS
+    
+    X, y, feature_map = get_data_by_windows(player_type, windows, shift=False)
+    skater_latest = X.groupby('playerId').last()
+    X = X.groupby('playerId').shift(1).dropna()
+    y = y.loc[X.index]
+    
+    pipelines = get_simple_pipelines(player_type, (X, y), force_retrain=True)
+    
+    preds = {}
+    
+    for col in PRED_COLS[player_type]:    
+        preds[col] = pipelines[player_type][col].predict(X_latest.dropna()[feature_map[col]])
+    preds_df = pd.DataFrame(preds, index=X_latest.dropna().index)
+    return preds_df
+    
+
 def main():
     """
     PREP DATA
@@ -12,45 +31,24 @@ def main():
     load_team_data()
     load_bios()
     process_y()
+    
+    """
+    GET PREDICTIONS
+    """
 
     import pandas as pd
-    from process_data import get_rest_of_season_player_stats, get_rest_of_season_stats, PRED_COLS
-    from model_training import get_simple_pipelines, load_player_feature_map
+    
+    skater_preds = get_latest_predictions('skater', [30, 15, 10, 5])
+    goalie_preds = get_latest_predictions('goalie', [30, 15, 8, 3])
+    
 
-
-    X, y = get_rest_of_season_player_stats('skater')
-    skater_latest = X.groupby('playerId').last()
-
-
-    preds = {}
-    skaters_p_feats = load_player_feature_map('skater', data=(X,y))
-    sk_p_cols = list(set([c for s in skaters_p_feats.values() for c in s[0]]))
-
-
-    X_g, y_g = get_rest_of_season_player_stats('goalie')
-    goalie_latest = X_g.groupby('playerId').last()
-
-    goalie_preds = {}
-    goalies_p_feats = load_player_feature_map('goalie', (X_g, y_g))
-
-    pipelines = get_simple_pipelines((X, y), (X_g, y_g))
-
-    preds = {}
-    goalie_preds = {}
-
-    for col in PRED_COLS['skater']:    
-        preds[col] = pipelines['skater'][col].predict(skater_latest.dropna()[skaters_p_feats[col][0]])
-    preds_df = pd.DataFrame(preds, index=skater_latest.dropna().index)
-
-    gl_p_cols = list(set([c for s in goalies_p_feats.values() for c in s[0]]))
-    for col in PRED_COLS['goalie']:
-        goalie_preds[col] = pipelines['goalie'][col].predict(goalie_latest.dropna()[goalies_p_feats[col][0]])
-    goalie_preds_df = pd.DataFrame(goalie_preds, index=goalie_latest.dropna().index)
-
-    preds = pd.concat([preds_df, goalie_preds_df], axis=0)
+    preds = pd.concat([skater_preds, goalie_preds], axis=0)
     preds['plusmin'] = preds['goalsfor'] - preds['goalsaga']
     preds['ga'] = -preds['ga'] / preds['icetime']
 
+    """
+    LOAD YAHOO DATA
+    """
 
     import yahoo_utils
     import lineup_utils
