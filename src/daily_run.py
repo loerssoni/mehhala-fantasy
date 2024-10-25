@@ -205,6 +205,7 @@ def main():
             rankings.append(data_dict)
 
         else:
+            base = [p for p in selected_team] 
             rest_of_them = ranks_season[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
             best_taken = ranks_season[[p for p in players.playerId.tolist() if p in stats_available and p not in rest_of_them + current_lineup]].sort_values(ascending=False).iloc[:100].index.tolist()
             for p in rest_of_them + best_taken:
@@ -242,7 +243,7 @@ def main():
 
 
     rankings = pd.DataFrame(rankings).set_index('playerId')
-
+    rankings['is_base'] = ranking.index.isin(base)
     n_games = week_rest_games[week_rest_games.index.isin(preds.index)]
     n_games.name = 'n_games'
     print(player_info.loc[current_lineup])
