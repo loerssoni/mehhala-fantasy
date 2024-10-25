@@ -14,6 +14,16 @@ POSITIONS_QUOTA = {
         'WC': 1
 }
 
+def all_elements_smaller(a, b):
+    # Check each key in Counter a
+    for key in a:
+        # If key is missing in b or a[key] is not less than b[key], return False
+        if key not in b:
+            return False
+        if a[key] > b[key]:
+            return False
+    return True
+
 def check_valid_lineup(lineup, position_lookup, positions_quota=None):
     if len(lineup) < 3:
         return True
@@ -39,8 +49,11 @@ def check_valid_lineup(lineup, position_lookup, positions_quota=None):
     multi_pos_positions = [position_lookup[p] for p in multi_positions]
     if len(multi_pos_positions) == 0:
         return True
+
+    cc = collections.Counter(positions_left))
+        
     for c in list(product(*multi_pos_positions)):
-        if collections.Counter(c) == collections.Counter(positions_left) or len(c) < 13:
+        if all_elements_smaller(collections.Counter(c), cc):
             return True
     return False
     
