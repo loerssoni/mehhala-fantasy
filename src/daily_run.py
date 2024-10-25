@@ -9,7 +9,7 @@ def get_latest_predictions(player_type, windows):
     X = X.groupby('playerId').shift(1).dropna()
     y = y.loc[X.index]
 
-    pipelines = get_simple_pipelines(player_type, (X, y), force_retrain=True)
+    pipelines = get_simple_pipelines(player_type, (X, y), feature_map, force_retrain=True)
 
     preds = {}
 
