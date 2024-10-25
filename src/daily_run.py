@@ -1,6 +1,6 @@
-import pandas as pd
 
 def get_latest_predictions(player_type, windows):
+    import pandas as pd
     from model_training import get_data_by_windows, get_simple_pipelines
     from process_data import PRED_COLS
 
@@ -25,6 +25,7 @@ def main():
     """
 
     from get_data import load_history, load_current, combine_history, process_y, load_bios, load_team_data
+    import pandas as pd
 
     # load_history()
 
@@ -55,7 +56,6 @@ def main():
     from process_data import PRED_COLS
 
     from ast import literal_eval
-    import pandas as pd
 
     game_id = 453
     players = yahoo_utils.get_players(game_id)
