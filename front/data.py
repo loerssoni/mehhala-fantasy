@@ -5,9 +5,9 @@ project_id = 'mehhala-fantasy'
 player_data = pd.read_csv('gs://{}.appspot.com/player_data.csv'.format(project_id))
 team_data = pd.read_csv('gs://{}.appspot.com/team_data.csv'.format(project_id))
 
-skater_data = player_data.loc[player_data.pos != "['G']", ['current_lineup','name','pos','rank','week_rank',
+skater_data = player_data.loc[player_data.pos != "['G']", ['is_available', 'current_lineup','name','pos','rank','week_rank',
                               'week_games','g','a','sog','ppp', 'fow','hit','block','pim','plusmin','team']]
-goalie_data = player_data.loc[player_data.pos == "['G']",['current_lineup','name','rank','week_rank','week_games', 
+goalie_data = player_data.loc[player_data.pos == "['G']",['is_available', 'current_lineup','name','rank','week_rank','week_games', 
                                           'ga','win','so','save','team']]
 team_season_data = team_data[['team','manager','g', 'a', 'ppp', 'sog', 'fow', 'hit', 'block', 'pim', 'plusmin',
        'ga', 'win', 'so', 'save']]
