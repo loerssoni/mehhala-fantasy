@@ -38,8 +38,8 @@ def main():
     GET PREDICTIONS
     """
 
-    skater_preds = get_latest_predictions('skater', [50, 30, 20, 15, 10, 8, 3, 1])
-    goalie_preds = get_latest_predictions('goalie', [30, 15, 10, 5, 3])
+    skater_preds = get_latest_predictions('skater', [30, 15, 10, 5, 3])
+    goalie_preds = get_latest_predictions('goalie', [50, 30, 20, 15, 10, 8, 3, 1])
 
 
     preds = pd.concat([skater_preds, goalie_preds], axis=0)
