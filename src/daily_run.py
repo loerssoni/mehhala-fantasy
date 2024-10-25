@@ -30,11 +30,11 @@ def main():
 
     # load_history()
 
-    #load_current()
-    #combine_history()
-    #load_team_data()
-    #load_bios()
-    #process_y()
+    load_current()
+    combine_history()
+    load_team_data()
+    load_bios()
+    process_y()
 
     """
     GET PREDICTIONS
