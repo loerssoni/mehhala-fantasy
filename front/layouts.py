@@ -68,39 +68,45 @@ header = dbc.Row(
 
 container = dbc.Container([header, tabs])
 
-@app.callback(
-    Output("team-data", "children"),
-    [Input('page-selection', 'value'),
-     Input('available-checkbox', 'value')]  # Capture the state of the checkbox
-)
-def render_content(tab, available_filter):
-    data_asset = pd.DataFrame({})
-    
-    # Load data based on the selected tab
-    if tab == 'skater_data':
-        data_asset = skater_data
-    elif tab == 'goalie_data':
-        data_asset = goalie_data
-    elif tab == 'team_season_data':
-        data_asset = team_season_data
-    elif tab == 'team_week_data':
-        data_asset = team_week_data
-    
-    # Apply filter if 'is_available' checkbox is checked and tab is skater_data or goalie_data
-    if tab in ['skater_data', 'goalie_data'] and 'available' in available_filter:
-        data_asset = data_asset[data_asset['is_available'] == True]
-
-    # Return the table layout
-    return html.Div(
+assets_to_render = {
+    'skater_data': skater_data,
+    'goalie_data': goalie_data,
+    'team_season_data': team_season_data, 
+    'team_week_data': team_week_data,
+    'available_skaters': skater_data[skater_data['is_available'] == True],
+    'available_goalies': goalie_data[goalie_data['is_available'] == True]
+}
+rendered_assets = {}
+for k, data_asset in assets_to_render.items():
+    rendered_assets[k] = html.Div(
             [dag.AgGrid(
                 rowData=data_asset.to_dict("records"),
                 columnDefs=[{"field": col} for col in data_asset.columns],
                 columnSize='autoSize', 
                 columnSizeOptions={
                 'defaultMinWidth': 50
-                } 
+                }
             )]
-        )
+    )
+
+@app.callback(
+    Output("team-data", "children"),
+    [Input('page-selection', 'value'),
+     Input('available-checkbox', 'value')]  # Capture the state of the checkbox
+)
+def render_content(tab, available_filter):
+    content = html.Div()
+    
+    # Apply filter if 'is_available' checkbox is checked and tab is skater_data or goalie_data
+    if tab in ['skater_data', 'goalie_data'] and 'available' in available_filter:
+        if tab == 'skater_data':
+            content = rendered_assets['available_skaters'] 
+        else:
+            content = rendered_assets['available_goalies']
+    else:
+        content = rendered_assets.get(tab, html.Div())
+    # Return the table layout
+    return content
 
 @app.callback(
     Output("checkbox-container", "style"),
