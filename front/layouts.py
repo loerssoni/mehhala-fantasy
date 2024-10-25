@@ -95,7 +95,10 @@ def render_content(tab, available_filter):
             [dag.AgGrid(
                 rowData=data_asset.to_dict("records"),
                 columnDefs=[{"field": col} for col in data_asset.columns],
-                columnSize='autoSize'
+                columnSize='autoSize', 
+                columnSizeOptions={
+                'defaultMinWidth': 50
+                } 
             )]
         )
 
