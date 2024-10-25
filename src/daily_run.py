@@ -161,8 +161,9 @@ def main():
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
 
     own_current = pd.Series({k:0 for k in cats})
-
-    while len(selected_team) < 60:
+    
+    TEAM_MAX_LENGTH = 60
+    while len(selected_team) < TEAM_MAX_LENGTH:
         print(str(len(selected_team)), end='\r')
 
         if len(selected_team) < 14:
@@ -204,7 +205,7 @@ def main():
             rankings.append(data_dict)
 
         else:
-            rest_of_them = ranks_season[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(50-len(selected_team))].index.tolist()
+            rest_of_them = ranks_season[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
             best_taken = ranks_season[[p for p in players.playerId.tolist() if p in stats_available and p not in rest_of_them + current_lineup]].sort_values(ascending=False).iloc[:100].index.tolist()
             for p in rest_of_them + best_taken:
                 data_dict = {'playerId':p, 

@@ -40,7 +40,7 @@ def forward_feature_selection_with_elimination(X, y, col, tol=1e-4, cv=3):
             selected_features.append(best_scores[0][1])
             remaining_features = [f for _, f in best_scores[1:]]  # Keep top n_to_keep - 1 remaining features
             best_score = best_scores[0][0]
-            print(f"Selected feature {best_scores[0][1]} with score {best_score}")
+            logging.info(f"Selected feature {best_scores[0][1]} with score {best_score}")
         else:
             # Stop if no improvement
             break
@@ -62,7 +62,7 @@ def load_player_feature_map(player_type, data, window=30, force_retrain=False):
         with open(player_feature_map_file, 'r') as f:
             player_features_map = json.loads(f.read())
     except FileNotFoundError:
-        print('File not found. Fitting...')
+        logging.info('File not found. Fitting...')
         force_retrain = True
     
     if force_retrain:
@@ -70,7 +70,7 @@ def load_player_feature_map(player_type, data, window=30, force_retrain=False):
         
         player_features_map = {}
         for col in y.columns:
-            print(f'Fitting for {col}')
+            logging.info(f'Fitting for {col}')
             player_features_map[col] = forward_feature_selection_with_elimination(X, y, col)
         with open(player_feature_map_file, 'w') as f:
             f.write(json.dumps(player_features_map))
@@ -102,7 +102,7 @@ def get_data_by_windows(player_type, windows=[], force_retrain=False, shift=True
         X = X[original_cols].copy()
         X.columns = [f'{c}_{window}' for c in original_cols]
         Xs.append(X)
-        print('retrieved data for window', window)
+        logging.info(f'retrieved data for window  {window}')
 
     X = pd.concat(Xs, axis=1).dropna()
     return X, y, full_feature_map
