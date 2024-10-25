@@ -107,8 +107,7 @@ def get_data_by_windows(player_type, windows=[], force_retrain=False):
     return X, y, full_feature_map
 
 def run_simple_training(player_features_map, data, player_type):
-    from sklearn.ensemble import HistGradientBoostingRegressor
-    from sklearn.linear_model import ElasticNet, Ridge, LinearRegression
+    from sklearn.linear_model import Ridge
     from sklearn.preprocessing import StandardScaler
     from sklearn.pipeline import Pipeline
     from sklearn.model_selection import train_test_split
@@ -125,9 +124,8 @@ def run_simple_training(player_features_map, data, player_type):
         print('fitting', c)
         lr = Pipeline([
             ('scl', StandardScaler()),
-            ('reg', ElasticNet(alpha=1e-4))
+            ('reg', Ridge(alpha=1))
         ])
-        gb = HistGradientBoostingRegressor(min_samples_leaf=3, random_state=42)
         pipe = lr
         pipe.fit(X_train[player_features_map[c]], y_train[c])
         preds = pipe.predict(X_test[player_features_map[c]])
