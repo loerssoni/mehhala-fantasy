@@ -1,4 +1,5 @@
 import pandas as pd
+
 def get_latest_predictions(player_type, windows):
     from model_training import get_data_by_windows, get_simple_pipelines
     from process_data import PRED_COLS
