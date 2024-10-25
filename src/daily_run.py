@@ -1,27 +1,27 @@
 def get_latest_predictions(player_type, windows):
     from model_training import get_data_by_windows, get_simple_pipelines
     from process_data import get_rest_of_season_player_stats, PRED_COLS
-    
+
     X, y, feature_map = get_data_by_windows(player_type, windows, shift=False)
     skater_latest = X.groupby('playerId').last()
     X = X.groupby('playerId').shift(1).dropna()
     y = y.loc[X.index]
-    
+
     pipelines = get_simple_pipelines(player_type, (X, y), force_retrain=True)
-    
+
     preds = {}
-    
-    for col in PRED_COLS[player_type]:    
+
+    for col in PRED_COLS[player_type]:
         preds[col] = pipelines[player_type][col].predict(X_latest.dropna()[feature_map[col]])
     preds_df = pd.DataFrame(preds, index=X_latest.dropna().index)
     return preds_df
-    
+
 
 def main():
     """
     PREP DATA
     """
-    
+
     from get_data import load_history, load_current, combine_history, process_y, load_bios, load_team_data
 
     # load_history()
@@ -31,16 +31,16 @@ def main():
     load_team_data()
     load_bios()
     process_y()
-    
+
     """
     GET PREDICTIONS
     """
 
     import pandas as pd
-    
-    skater_preds = get_latest_predictions('skater', [30, 15, 10, 5])
-    goalie_preds = get_latest_predictions('goalie', [30, 15, 8, 3])
-    
+
+    skater_preds = get_latest_predictions('skater', [50, 30, 20, 15, 10, 8, 3, 1])
+    goalie_preds = get_latest_predictions('goalie', [30, 15, 10, 5, 3])
+
 
     preds = pd.concat([skater_preds, goalie_preds], axis=0)
     preds['plusmin'] = preds['goalsfor'] - preds['goalsaga']
@@ -74,7 +74,7 @@ def main():
     info = []
     for team in teams.team_id.drop_duplicates():
         info.append(q.get_team_info(team.split('.')[-1]))
-        
+
     """
     CHECK LINEUPS
     """
@@ -109,13 +109,13 @@ def main():
     ir = [p.player_key for t in info for p in t.roster.players if p.selected_position.date == date_now.strftime('%Y-%m-%d') and 'IR' in p.selected_position.position]
     ir = teams[(teams.player_key.isin(ir))&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
     ir = ir.merge(players, how='left', on='player_key').playerId.tolist()
-    
+
     current_lineup = teams[(teams.team_id == current_team.team_key)&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
     current_lineup = current_lineup.merge(players, how='left', on='player_key').playerId.tolist()
 
     opp_lineup = teams[(teams.team_id == opponent_id)&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
     opp_lineup = opp_lineup.merge(players, how='left', on='player_key').playerId.tolist() 
-    
+
     """
     COMPUTE BENCHMARKS
     """
@@ -128,8 +128,8 @@ def main():
 
     opp_expected = preds_st.loc[opp_lineup, cats].copy()
     opp_expected = opp_expected.mean()
-    
-    
+
+
     from scipy import stats
     def prob_A_greater_than_B(mu_A, mu_B):
         # Calculate the mean and standard deviation of the difference distribution
@@ -137,7 +137,7 @@ def main():
         prob = 1 - stats.norm.cdf(0, loc=mean_diff, scale=1)
 
         return prob
-    
+
     """
     MAKE PREDICTIONS
     """
@@ -154,7 +154,7 @@ def main():
 
     own_current = pd.Series({k:0 for k in cats})
 
-    while len(selected_team) < 50:
+    while len(selected_team) < 60:
         print(str(len(selected_team)), end='\r')
 
         if len(selected_team) < 14:
@@ -212,8 +212,7 @@ def main():
                     data_dict['is_available'] = True
                 else:
                     data_dict['is_available'] = False
-       
-                
+
                 rankings.append(data_dict)
 
             selected_team += rest_of_them
@@ -232,7 +231,7 @@ def main():
                 data_dict['week_games'] = 0
             rankings.append(data_dict)
 
-    
+
     rankings = pd.DataFrame(rankings).set_index('playerId')
 
     n_games = week_rest_games[week_rest_games.index.isin(preds.index)]
@@ -248,12 +247,12 @@ def main():
         if p not in current_lineup:
             print(player_info.join(n_games).join(rankings).loc[p].to_dict())
 
-    
+
     """
     SAVE DATA
-    
+
     """
-    
+
     output = player_info.join(rankings, how='inner').sort_values(['rank'], ascending=False).join(preds_st.round(3))
     output['current_lineup'] = output.index.isin(current_lineup)
     output['selection'] = output.index.isin(selected_team)
@@ -290,8 +289,6 @@ def main():
     ss.to_csv('data/team_data.csv')
     ss.to_csv(f'data/archive/{date_now}_team_data.csv')
 
-        
-    
 
 if __name__ == '__main__':
     main()
