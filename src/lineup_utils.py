@@ -50,7 +50,7 @@ def check_valid_lineup(lineup, position_lookup, positions_quota=None):
     if len(multi_pos_positions) == 0:
         return True
 
-    cc = collections.Counter(positions_left))
+    cc = collections.Counter(positions_left)
         
     for c in list(product(*multi_pos_positions)):
         if all_elements_smaller(collections.Counter(c), cc):
