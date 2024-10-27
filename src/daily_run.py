@@ -167,7 +167,7 @@ def main():
         print(str(len(selected_team)), end='\r')
 
         if len(selected_team) < 14:
-            available = [p for p in current_lineup if p not in selected_team]
+            available = [p for p in current_lineup if p not in selected_team + ir]
 
         else:
             available = [p for p in all_available_players if p not in selected_team]
