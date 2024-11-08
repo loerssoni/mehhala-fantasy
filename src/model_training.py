@@ -135,7 +135,7 @@ transformers = {
 }
 
 def run_simple_training(player_features_map, data, player_type):
-    from sklearn.linear_model import Ridge
+    from sklearn.linear_model import RidgeCV
     from sklearn.compose import TransformedTargetRegressor
     from sklearn.preprocessing import StandardScaler
     from sklearn.pipeline import Pipeline
@@ -144,7 +144,6 @@ def run_simple_training(player_features_map, data, player_type):
     from sklearn.metrics import r2_score, mean_absolute_error
 
     import numpy as np
-
 
     X, y = data
     X_train, X_test, y_train, y_test = train_test_split(X, y.loc[X.index], test_size=0.2, shuffle=False)
@@ -155,7 +154,7 @@ def run_simple_training(player_features_map, data, player_type):
         logging.info('fitting ' + c)
         lr = Pipeline([
             ('scl', StandardScaler()),
-            ('reg', (TransformedTargetRegressor(Ridge(alpha=1), **transformers.get(c, {}))))
+            ('reg', (TransformedTargetRegressor(RidgeCV(cv=3, alphas=[1e-2, 1e-1, 1, 10, 100]), **transformers.get(c, {}))))
         ])
 
         pipe = lr
