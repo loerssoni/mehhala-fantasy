@@ -97,7 +97,7 @@ def get_data_by_windows(player_type, windows=[], force_retrain=False, shift=True
             
         
         if not force_retrain:
-            X, y = get_rest_of_season_player_stats(player_type, window=window, cols=original_cols)
+            X, y = get_rest_of_season_player_stats(player_type, window=window, cols=original_cols, shift=shift)
 
         X = X[original_cols].copy()
         X.columns = [f'{c}_{window}' for c in original_cols]
@@ -107,35 +107,66 @@ def get_data_by_windows(player_type, windows=[], force_retrain=False, shift=True
     X = pd.concat(Xs, axis=1).dropna()
     return X, y, full_feature_map
 
+
+# Define transformation functions
+def log_tr(x):
+    return np.log(x + 1)
+def exp_tr(x):
+    return np.exp(x) - 1
+
+from sklearn.preprocessing import PowerTransformer
+
+transformers = {
+    'ga':{'func':log_tr, 'inverse_func':exp_tr},
+    'win':{'func':log_tr, 'inverse_func':exp_tr},
+    'so':{'transformer':PowerTransformer()},
+    'save':{'transformer':PowerTransformer()},
+    'icetime':{'func':log_tr, 'inverse_func':exp_tr},
+    'g':{'func':log_tr, 'inverse_func':exp_tr},
+    'a':{'func':log_tr, 'inverse_func':exp_tr},
+    'sog':{},
+    'fow':{},
+    'hit':{},
+    'block':{},
+    'pim':{},
+    'goalsfor':{},
+    'goalsaga':{},
+    'ppp':{'func':log_tr, 'inverse_func':exp_tr},
+}
+
 def run_simple_training(player_features_map, data, player_type):
     from sklearn.linear_model import Ridge
+    from sklearn.compose import TransformedTargetRegressor
     from sklearn.preprocessing import StandardScaler
     from sklearn.pipeline import Pipeline
     from sklearn.model_selection import train_test_split
     import numpy as np
     from sklearn.metrics import r2_score, mean_absolute_error
 
+    import numpy as np
+
+
     X, y = data
     X_train, X_test, y_train, y_test = train_test_split(X, y.loc[X.index], test_size=0.2, shuffle=False)
 
-        
     pipes = {}
     for c in PRED_COLS[player_type]:
-        
+
         logging.info('fitting ' + c)
         lr = Pipeline([
             ('scl', StandardScaler()),
-            ('reg', Ridge(alpha=1))
+            ('reg', (TransformedTargetRegressor(Ridge(alpha=1), **transformers.get(c, {}))))
         ])
+
         pipe = lr
         pipe.fit(X_train[player_features_map[c]], y_train[c])
         preds = pipe.predict(X_test[player_features_map[c]])
         preds = np.clip(preds, 0, np.inf)
         score = r2_score(y_test[c], preds)
-        logging.info(f'{c}--{score}')
+        logging.info(f'{c}  --  {score}')
         mae = mean_absolute_error(y_test[c], preds)
-        logging.info(f'{c}--{mae}')
-        
+        logging.info(f'{c}  --  {mae}')
+
         # refit
         pipe.fit(X[player_features_map[c]], y[c])
         pipes[c] = pipe
@@ -150,7 +181,7 @@ def get_simple_pipelines(player_type, data, feature_map, force_retrain=False):
     try:
         with open(model_files[player_type], 'rb') as f:
             pipes = pickle.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, EOFError):
         force_retrain = True
         
     if force_retrain:

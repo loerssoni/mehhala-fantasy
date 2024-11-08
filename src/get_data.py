@@ -134,9 +134,9 @@ def process_y():
         ys[k] = y_df[v].sum(1)
         
     ys['win'] = (ys['win'] > 0).astype(int)
-    ys['so'] = (ys['ga'] == 0)&(ys['icetime'] == 3600)
+    ys['so'] = (ys['ga'] == 0)&(ys['icetime'] > 3300)
     ys['save'] = ys['save'] - ys['ga']
-    ys['icetime'] /= 360
+    ys['icetime'] /= 3600
     ys = pd.DataFrame(ys)
     
     print('Processed y, writing to file')
