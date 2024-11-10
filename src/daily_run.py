@@ -63,7 +63,6 @@ def main():
     """
 
     import yahoo_utils
-    import lineup_utils
     from process_data import PRED_COLS
 
     from ast import literal_eval
@@ -154,10 +153,8 @@ def main():
     """
     MAKE SELECTIONS
     """
-    selected_team = []
-
+    
     date = dates[0]
-    rankings = []
     logging.info(date.date())
 
     all_available_players = players[(~players.player_key.isin(starting_teams.player_key))|(players.playerId.isin(current_lineup))]
@@ -166,7 +163,20 @@ def main():
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
 
     own_current = pd.Series({k:0 for k in cats})
-    
+
+
+ 
+    current_lineup
+    ir
+    all_available_players
+    date
+    preds_st
+    player_games
+    position_lookup
+
+    import lineup_utils
+    rankings = []
+    selected_team = []
     TEAM_MAX_LENGTH = 60
     while len(selected_team) < TEAM_MAX_LENGTH:
         print(str(len(selected_team)), end='\r')
