@@ -21,11 +21,7 @@ def get_latest_predictions(player_type, windows):
     return preds_df
 
 
-def main():
-    """
-    PREP DATA
-    """
-
+def refresh_data():
     from get_data import load_history, load_current, combine_history, process_y, load_bios, load_team_data
 
     # load_history()
@@ -36,10 +32,7 @@ def main():
     load_bios()
     process_y()
 
-    """
-    GET PREDICTIONS
-    """
-
+def get_preds():
     skater_preds = get_latest_predictions('skater', [30, 15, 10, 5, 3])
     logging.info('made skater preds')
     logging.info(skater_preds.shape)
@@ -52,7 +45,19 @@ def main():
     preds['ga'] = -preds['ga'] / preds['icetime']
     logging.info('preds processed.' ) 
     logging.info(preds.shape)
+    return preds
+
+def main():
+    """
+    PREP DATA
+    """
+    refresh_data()
     
+    """
+    GET PREDICTIONS
+    """
+    preds = get_preds()
+        
     """
     LOAD YAHOO DATA
     """
