@@ -27,7 +27,7 @@ def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=Tru
     y['date'] = pd.to_datetime(y.index.get_level_values('gameDate'), format='%Y%m%d')
     y['season'] = (y.index.get_level_values('gameId') // 1000000)
     y = y.sort_values('date', ascending=False)
-    y_r = y.sort_values('date', ascending=False).groupby(['playerId','season'], as_index=False)[PRED_COLS[player_type]].expanding().mean()
+    y_r = y.groupby(['playerId','season'], as_index=False)[PRED_COLS[player_type]].expanding().mean()
     y_r = y_r.set_index(X.index)
     return X, y_r
 
