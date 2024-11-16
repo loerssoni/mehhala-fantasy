@@ -132,13 +132,11 @@ def main():
     all_current_players = players[players.player_key.isin(starting_teams.player_key)].playerId.tolist()
     all_current_preds = [p for p in all_current_players if p in preds_st.index]
     baseline_expected = preds_st.loc[all_current_preds, cats].copy()
-    baseline_expected = baseline_expected.apply(lambda col: col.nlargest(13).mean()) 
-
-
+    baseline_expected = baseline_expected.mean()
+    
     opp_expected = preds_st.loc[opp_lineup, cats].copy()
-    opp_expected = opp_expected.apply(lambda col: col.nlargest(13).mean()) 
-
-
+    opp_expected = opp_expected.mean()
+    
     from scipy import stats
     def prob_A_greater_than_B(mu_A, mu_B):
         # Calculate the mean and standard deviation of the difference distribution
