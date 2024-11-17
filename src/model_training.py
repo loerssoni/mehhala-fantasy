@@ -69,7 +69,7 @@ def load_player_feature_map(player_type, data, window=30, force_retrain=False):
         X, y = data
         
         player_features_map = {}
-        for col in y.columns:
+        for col in PRED_COLS[player_type]:
             logging.info(f'Fitting for {col}')
             player_features_map[col] = forward_feature_selection_with_elimination(X, y, col)
         with open(player_feature_map_file, 'w') as f:

@@ -27,8 +27,28 @@ def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=Tru
     y['date'] = pd.to_datetime(y.index.get_level_values('gameDate'), format='%Y%m%d')
     y['season'] = (y.index.get_level_values('gameId') // 1000000)
     y = y.sort_values('date', ascending=False)
-    y_r = y.groupby(['playerId','season'], as_index=False)[PRED_COLS[player_type]].expanding().mean()
-    y_r = y_r.set_index(X.index)
+    
+    if player_type == 'goalie':
+        window = 15
+        
+    if player_type == 'skater':
+        window = 80
+        
+    y_r = y.groupby(['playerId'], as_index=False)[PRED_COLS[player_type]].rolling(window, min_periods=1).mean()
+    y_r = y_r.loc[X.index]
+    
+    # alternative windows for specific items
+    if player_type == 'goalie':
+        new_window = 75
+        cols = ['so']
+        
+    if player_type == 'skater':
+        new_window = 60
+        cols = ['fow', 'hit', 'goalsfor','goalsaga']
+        
+    y_so = y.groupby(['playerId'], as_index=False)[cols].rolling(new_window, min_periods=1).mean().loc[X.index]
+    y_r[cols] = y_so[cols]
+    
     return X, y_r
 
 def get_team_stats(shift=True):
