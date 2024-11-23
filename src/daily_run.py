@@ -6,17 +6,21 @@ def get_latest_predictions(player_type, windows):
     from model_training import get_data_by_windows, get_simple_pipelines
     from process_data import PRED_COLS
 
-    X, y, feature_map = get_data_by_windows(player_type, windows, shift=False)
+    X, y, feature_map = get_data_by_windows(player_type, windows, force_retrain=False, shift=False)
     X_latest = X.groupby('playerId').last()
     X = X.groupby('playerId').shift(1).dropna()
     y = y.loc[X.index]
+
     logging.info('loaded data')
     pipelines = get_simple_pipelines(player_type, (X, y), feature_map, force_retrain=True)
     logging.info('trained pipelines')
     preds = {}
 
     for col in PRED_COLS[player_type]:
-        preds[col] = pipelines[col].predict(X_latest.dropna()[feature_map[col]])
+        cols = feature_map[col]
+        if len(cols) == 0:
+            cols = ['dummyvar']
+        preds[col] = pipelines[col].predict(X_latest.dropna()[cols])
     preds_df = pd.DataFrame(preds, index=X_latest.dropna().index)
     return preds_df
 
