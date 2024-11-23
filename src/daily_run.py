@@ -163,7 +163,7 @@ def main():
 
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
 
-    own_current = pd.Series({k:0 for k in cats})
+    # own_current = pd.Series({k:0 for k in cats})
     
     TEAM_MAX_LENGTH = 60
     while len(selected_team) < TEAM_MAX_LENGTH:
@@ -193,8 +193,8 @@ def main():
             selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
             print('Selected: ', player_info.loc[selected_player,'name'])
             selected_team.append(selected_player)
-            own_current = (own_current * len(selected_team) + added_vals.loc[selected_player] * (14-len(selected_team))) / 14
-            own_current = own_current.fillna(0)
+            # own_current = (own_current * len(selected_team) + added_vals.loc[selected_player] * (14-len(selected_team))) / 14
+            # own_current = own_current.fillna(0)
 
             data_dict = {'playerId':selected_player, 
                          'rank': round(ranks_season.loc[selected_player], 3), 
