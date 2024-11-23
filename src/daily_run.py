@@ -191,6 +191,7 @@ def main():
 
         if len(selected_team) < 14:
             selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
+            print('Selected: ', player_info.loc[selected_player,'name'])
             selected_team.append(selected_player)
             own_current = (own_current * len(selected_team) + added_vals.loc[selected_player] * (14-len(selected_team))) / 14
             own_current = own_current.fillna(0)
