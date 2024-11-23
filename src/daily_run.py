@@ -135,10 +135,10 @@ def main():
     preds_st = ((preds - preds.mean())/(preds.std()))
     all_current_players = players[players.player_key.isin(starting_teams.player_key)].playerId.tolist()
     all_current_preds = [p for p in all_current_players if p in preds.index]
-    baseline_expected = preds_st.loc[all_current_preds, cats].copy()
+    baseline_expected = preds.loc[all_current_preds, cats].copy()
     baseline_expected = baseline_expected.mean()
     
-    opp_expected = preds_st.loc[[c for c in opp_lineup if c in all_current_preds], cats].copy()
+    opp_expected = preds.loc[[c for c in opp_lineup if c in all_current_preds], cats].copy()
     opp_expected = opp_expected.mean()
     
     from scipy import stats
@@ -177,14 +177,14 @@ def main():
 
         rest_games = lineup_utils.get_rest_of_season_games((date + pd.Timedelta('1d')), player_games, selected_team, position_lookup, preds.icetime.dropna())
         stats_available = rest_games[rest_games.index.isin(preds.index)].index
-        lineup_preds = preds_st.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
+        lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
         added_vals = lineup_preds.apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
         ranks_season = added_vals.sum(1)
         ranks_season.name = 'rank'
 
         week_rest_games = lineup_utils.get_rest_of_season_games(date, week_games, selected_team, position_lookup, preds.icetime.dropna())
         week_stats_available = week_rest_games[week_rest_games.index.isin(preds.index)].index
-        week_lineup_preds = preds_st.loc[stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
+        week_lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
         week_added_vals = week_lineup_preds.apply(lambda x: prob_A_greater_than_B(x, opp_expected), 1).apply(pd.Series, index=cats)
         week_ranks = week_added_vals.sum(1)
         week_ranks.name = 'week_rank'
@@ -267,14 +267,14 @@ def main():
 
     """
 
-    output = player_info.join(rankings, how='inner').sort_values(['rank'], ascending=False).join(preds_st.round(3))
+    output = player_info.join(rankings, how='inner').sort_values(['rank'], ascending=False).join(preds.round(3))
     output['current_lineup'] = output.index.isin(current_lineup)
     output['selection'] = output.index.isin(selected_team)
     output = output.sort_values(['current_lineup', 'rank','week_rank'], ascending=False)
     output.to_csv('data/player_data.csv')
     output.to_csv(f'data/archive/{date_now}_player_data.csv')
 
-    ranks = preds_st.copy()
+    ranks = preds.copy()
     ranks = ranks[cats]
     full_n_games = player_games[player_games.ts.dt.date > date_now].groupby('playerId').gameId.count()
     full_n_games = pd.DataFrame(ranks).join(full_n_games).fillna(0).gameId
