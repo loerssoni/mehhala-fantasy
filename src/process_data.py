@@ -16,39 +16,60 @@ def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=Tru
     x_f, y_f = filenames[player_type]
     X = pd.read_hdf(x_f)
     X = X.sort_index(level='gameId')
+
     if cols is not None:
-        X = X[cols].copy()
-    X = X.groupby('playerId', as_index=False).rolling(window).mean().drop('playerId', axis=1)
-    y = pd.read_hdf(y_f)
-    
-    if shift:
-        X = X.groupby('playerId').shift(1)
-    
-    y['date'] = pd.to_datetime(y.index.get_level_values('gameDate'), format='%Y%m%d')
-    y['season'] = (y.index.get_level_values('gameId') // 1000000)
-    y = y.sort_values('date', ascending=False)
+        used_cols = list(set([c.replace('_played', '') for c in cols]))
+        X = X[used_cols].copy()
+        
+    min_periods = min(window, 20)
     
     if player_type == 'goalie':
-        window = 15
+        X = X.fillna(0).groupby('playerId', as_index=False).rolling(window, min_periods=min_periods).mean().drop('playerId', axis=1)
+        X_played = X.dropna().groupby('playerId', as_index=False).rolling(window, min_periods=min_periods).mean().drop('playerId', axis=1)
+        X = X.join(X_played, rsuffix='_played')
+        if cols is not None:
+            X = X[cols].copy()
+    else:
+        X = X.dropna().groupby('playerId', as_index=False).rolling(window, min_periods=min_periods).mean().drop('playerId', axis=1)
         
+    X = X.groupby('playerId').ffill()
+
+    if shift:
+        X = X.groupby('playerId').shift(1)
+        
+    y = pd.read_hdf(y_f)    
+    y = y.sort_values('gameId', ascending=False)
+    
+    min_periods = 5
+
+    if player_type == 'goalie':
+        window = 42
+        stat_cols = [c for c in PRED_COLS[player_type] if c != 'icetime']
+        y[stat_cols] = y[stat_cols].apply(lambda x: x / y.icetime)
+        y_played = y.dropna().groupby(['playerId'], as_index=False)[stat_cols].rolling(window, min_periods=min_periods).mean().drop('playerId', axis=1)
+        y_all = y.groupby(['playerId'], as_index=False)[['icetime']].rolling(window, min_periods=min_periods).mean().drop('playerId', axis=1)
+        y_r = y_all[['icetime']].join(y_played)
+    
     if player_type == 'skater':
         window = 80
-        
-    y_r = y.groupby(['playerId'], as_index=False)[PRED_COLS[player_type]].rolling(window, min_periods=1).mean()
-    y_r = y_r.loc[X.index]
+        y_r = y.groupby(['playerId'], as_index=False)[PRED_COLS[player_type]].rolling(window, min_periods=min_periods).mean()
     
     # alternative windows for specific items
     if player_type == 'goalie':
-        new_window = 75
-        cols = ['so']
+        new_window = 30
+        new_cols = ['so', 'ga']
+        y_played = y.dropna().groupby(['playerId'], as_index=False)[new_cols].rolling(new_window, min_periods=min_periods).mean().drop('playerId', axis=1)
+        y_so = y_r[['icetime']].join(y_played, rsuffix='_played')
         
     if player_type == 'skater':
         new_window = 60
-        cols = ['fow', 'hit', 'goalsfor','goalsaga']
-        
-    y_so = y.groupby(['playerId'], as_index=False)[cols].rolling(new_window, min_periods=1).mean().loc[X.index]
-    y_r[cols] = y_so[cols]
+        new_cols = ['fow', 'hit', 'goalsfor','goalsaga']
+        y_so = y.groupby(['playerId'], as_index=False)[new_cols].rolling(new_window, min_periods=min_periods).mean().loc[X.index]
     
+    y_r = y_r.loc[X.index]
+    y_r[new_cols] = y_so[new_cols]
+    
+    X['dummyvar'] = 1
     return X, y_r
 
 def get_team_stats(shift=True):

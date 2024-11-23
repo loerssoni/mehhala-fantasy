@@ -120,7 +120,7 @@ def process_y():
     games = games.drop(['first_w_team','last_w_team',], axis=1)
     games = games.merge(df, how='left', on=['season','gameId','playerTeam','playerId', 'opposingTeam','gameDate', 'name', 'home_or_away'])
     games = games.drop(['position', 'situation'], axis=1)
-    games = games.fillna(0)
+    # games = games.fillna(0)
 
     y_df = games.set_index(INDEX_COLS)
     y_df['win'] = (y_df['win']&(y_df['icetime'] > 1800)).astype(int)

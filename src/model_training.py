@@ -6,16 +6,21 @@ from sklearn.model_selection import cross_val_score
 from process_data import get_rest_of_season_player_stats, PRED_COLS
 import pickle
 import logging
+from sklearn.model_selection import KFold
 
 def forward_feature_selection_with_elimination(X, y, col, tol=1e-4, cv=3):
-    X = X.dropna()
+
+    non_nan = X.notna().all(axis=1) & y[col].notna()
+    X = X.loc[non_nan]
     y = y.loc[X.index]
+    
     n_features = X.shape[1]
     selected_features = []
     remaining_features = X.columns.tolist()
     best_score = 0
     lasso_cv = LinearRegression()
     
+    cvs = KFold(n_splits=cv, shuffle=False)
     while remaining_features:
         scores = []
         n = len(remaining_features)
@@ -25,7 +30,7 @@ def forward_feature_selection_with_elimination(X, y, col, tol=1e-4, cv=3):
             X_subset = X.loc[X.index.isin(y.index),features_to_try]
 
             # Use cross-validation to evaluate the model
-            score = np.mean(cross_val_score(lasso_cv, X_subset, y.loc[X_subset.index, col], cv=cv))
+            score = np.mean(cross_val_score(lasso_cv, X_subset, y.loc[X_subset.index, col], cv=cvs))
             scores.append((score, feature))
             if i % 100 == 0:
                 print(i, '/', n)
@@ -98,13 +103,14 @@ def get_data_by_windows(player_type, windows=[], force_retrain=False, shift=True
         
         if not force_retrain:
             X, y = get_rest_of_season_player_stats(player_type, window=window, cols=original_cols, shift=shift)
-
+        original_cols = X.columns
         X = X[original_cols].copy()
         X.columns = [f'{c}_{window}' for c in original_cols]
         Xs.append(X)
         logging.info(f'retrieved data for window  {window}')
 
     X = pd.concat(Xs, axis=1).dropna()
+    X['dummyvar'] = 1
     return X, y, full_feature_map
 
 
@@ -118,10 +124,10 @@ from sklearn.preprocessing import PowerTransformer
 
 transformers = {
     'ga':{'func':log_tr, 'inverse_func':exp_tr},
-    'win':{'func':log_tr, 'inverse_func':exp_tr},
-    'so':{'transformer':PowerTransformer()},
-    'save':{'transformer':PowerTransformer()},
-    'icetime':{'func':log_tr, 'inverse_func':exp_tr},
+    'win':{},
+    'so':{'func':log_tr, 'inverse_func':exp_tr},
+    'save':{'func':log_tr, 'inverse_func':exp_tr},
+    'icetime':{},
     'g':{'func':log_tr, 'inverse_func':exp_tr},
     'a':{'func':log_tr, 'inverse_func':exp_tr},
     'sog':{},
@@ -135,7 +141,8 @@ transformers = {
 }
 
 def run_simple_training(player_features_map, data, player_type):
-    from sklearn.linear_model import RidgeCV
+    from sklearn.linear_model import RidgeCV, LinearRegression
+    from sklearn.model_selection import KFold 
     from sklearn.compose import TransformedTargetRegressor
     from sklearn.preprocessing import StandardScaler
     from sklearn.pipeline import Pipeline
@@ -146,17 +153,23 @@ def run_simple_training(player_features_map, data, player_type):
     import numpy as np
 
     X, y = data
-    X_train, X_test, y_train, y_test = train_test_split(X, y.loc[X.index], test_size=0.2, shuffle=False)
+    y = y.dropna()
+    X = X.loc[y.index]
+    X['dummyvar'] = 1
+    X_train, X_test, y_train, y_test = train_test_split(X, y.loc[X.index], test_size=0.2, shuffle=True)
 
     pipes = {}
     for c in PRED_COLS[player_type]:
+        if len(player_features_map[c]) == 0:
+            player_features_map[c] = ['dummyvar']
 
         logging.info('fitting ' + c)
         lr = Pipeline([
             ('scl', StandardScaler()),
-            ('reg', (TransformedTargetRegressor(RidgeCV(cv=3, alphas=[1e-2, 1e-1, 1, 10, 100]), **transformers.get(c, {}))))
+            ('reg', (TransformedTargetRegressor(RidgeCV(cv=KFold(n_splits=3, shuffle=False), alphas=[1e-4, 1e-2, 1e-1, 10]), **transformers.get(c, {}))))
+            # ('reg', LinearRegression()),
         ])
-
+        
         pipe = lr
         pipe.fit(X_train[player_features_map[c]], y_train[c])
         preds = pipe.predict(X_test[player_features_map[c]])
