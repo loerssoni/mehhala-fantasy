@@ -34,11 +34,11 @@ def main():
 
     # load_history()
 
-    #load_current()
-    #combine_history()
-    #load_team_data()
-    #load_bios()
-    #process_y()
+    load_current()
+    combine_history()
+    load_team_data()
+    load_bios()
+    process_y()
 
     """
     GET PREDICTIONS
@@ -50,10 +50,11 @@ def main():
     goalie_preds = get_latest_predictions('goalie', [50, 30, 20, 15, 10, 8, 3, 1])
     logging.info('made goalie preds')
     logging.info(goalie_preds.shape)
-    
+
     preds = pd.concat([skater_preds, goalie_preds], axis=0)
     preds['plusmin'] = preds['goalsfor'] - preds['goalsaga']
 
+    preds.icetime = (preds.icetime-preds.icetime.min())/(preds.icetime.max()-preds.icetime.min())
     preds.so = preds.so * preds.icetime
     preds.win = preds.win * preds.icetime
     preds.save = preds.save * preds.icetime
@@ -131,20 +132,20 @@ def main():
     opp_lineup = teams[(teams.team_id == opponent_id)&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
     opp_lineup = opp_lineup.merge(players, how='left', on='player_key').playerId.tolist() 
     logging.info('lineups processed')
-    
+
     """
     COMPUTE BENCHMARKS
     """
     starting_teams = teams.loc[(pd.to_datetime(teams.index) == (date + pd.Timedelta('1d')))]
-    preds_st = ((preds - preds.mean())/(preds.std()))
     all_current_players = players[players.player_key.isin(starting_teams.player_key)].playerId.tolist()
     all_current_preds = [p for p in all_current_players if p in preds.index]
+    preds_st = ((preds - preds.loc[all_current_preds].mean())/(preds.std()))
     baseline_expected = preds_st.loc[all_current_preds, cats].copy()
     baseline_expected = baseline_expected.mean()
-    
+
     opp_expected = preds_st.loc[[c for c in opp_lineup if c in all_current_preds], cats].copy()
     opp_expected = opp_expected.mean()
-    
+
     from scipy import stats
     def prob_A_greater_than_B(mu_A, mu_B):
         # Calculate the mean and standard deviation of the difference distribution
@@ -168,7 +169,7 @@ def main():
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
 
     # own_current = pd.Series({k:0 for k in cats})
-    
+
     TEAM_MAX_LENGTH = 100
     while len(selected_team) < TEAM_MAX_LENGTH:
         print(str(len(selected_team)), end='\r')
@@ -183,14 +184,14 @@ def main():
         stats_available = rest_games[rest_games.index.isin(preds.index)].index
         lineup_preds = preds_st.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
         added_vals = lineup_preds.apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
-        ranks_season = added_vals.sum(1)
+        ranks_season = lineup_preds.sum(1)
         ranks_season.name = 'rank'
 
         week_rest_games = lineup_utils.get_rest_of_season_games(date, week_games, selected_team, position_lookup, preds.icetime.dropna())
         week_stats_available = week_rest_games[week_rest_games.index.isin(preds.index)].index
         week_lineup_preds = preds_st.loc[stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
         week_added_vals = week_lineup_preds.apply(lambda x: prob_A_greater_than_B(x, opp_expected), 1).apply(pd.Series, index=cats)
-        week_ranks = week_added_vals.sum(1)
+        week_ranks = week_lineup_preds.sum(1)
         week_ranks.name = 'week_rank'
 
         if len(selected_team) < 14:
@@ -264,6 +265,8 @@ def main():
     for p in selected_team:
         if p not in current_lineup:
             print(player_info.join(n_games).join(rankings).loc[p].to_dict())
+
+
 
 
     """

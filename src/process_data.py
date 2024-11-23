@@ -43,7 +43,7 @@ def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=Tru
     min_periods = 5
 
     if player_type == 'goalie':
-        window = 42
+        window = 5
         stat_cols = [c for c in PRED_COLS[player_type] if c != 'icetime']
         y[stat_cols] = y[stat_cols].apply(lambda x: x / y.icetime)
         y_played = y.dropna().groupby(['playerId'], as_index=False)[stat_cols].rolling(window, min_periods=min_periods).mean().drop('playerId', axis=1)
@@ -51,23 +51,10 @@ def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=Tru
         y_r = y_all[['icetime']].join(y_played)
     
     if player_type == 'skater':
-        window = 80
+        window = 20
         y_r = y.groupby(['playerId'], as_index=False)[PRED_COLS[player_type]].rolling(window, min_periods=min_periods).mean()
     
-    # alternative windows for specific items
-    if player_type == 'goalie':
-        new_window = 30
-        new_cols = ['so', 'ga']
-        y_played = y.dropna().groupby(['playerId'], as_index=False)[new_cols].rolling(new_window, min_periods=min_periods).mean().drop('playerId', axis=1)
-        y_so = y_r[['icetime']].join(y_played, rsuffix='_played')
-        
-    if player_type == 'skater':
-        new_window = 60
-        new_cols = ['fow', 'hit', 'goalsfor','goalsaga']
-        y_so = y.groupby(['playerId'], as_index=False)[new_cols].rolling(new_window, min_periods=min_periods).mean().loc[X.index]
-    
     y_r = y_r.loc[X.index]
-    y_r[new_cols] = y_so[new_cols]
     
     X['dummyvar'] = 1
     return X, y_r
