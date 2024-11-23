@@ -182,14 +182,19 @@ def main():
 
         rest_games = lineup_utils.get_rest_of_season_games((date + pd.Timedelta('1d')), player_games, selected_team, position_lookup, preds.icetime.dropna())
         stats_available = rest_games[rest_games.index.isin(preds.index)].index
-        lineup_preds = preds_st.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
+        lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
+        compt = [p for p in all_current_preds if p in lineup_preds]
+        lineup_preds = (lineup_preds - lineup_preds.loc[compt].mean())/ (lineup_preds.loc[compt].std())
         added_vals = lineup_preds.apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
         ranks_season = lineup_preds.sum(1)
         ranks_season.name = 'rank'
 
         week_rest_games = lineup_utils.get_rest_of_season_games(date, week_games, selected_team, position_lookup, preds.icetime.dropna())
         week_stats_available = week_rest_games[week_rest_games.index.isin(preds.index)].index
-        week_lineup_preds = preds_st.loc[stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
+        week_lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
+        compt = [p for p in all_current_preds if p in week_lineup_preds]
+        week_lineup_preds = (week_lineup_preds - week_lineup_preds.loc[compt].mean())/ (week_lineup_preds.loc[compt].std())
+        
         week_added_vals = week_lineup_preds.apply(lambda x: prob_A_greater_than_B(x, opp_expected), 1).apply(pd.Series, index=cats)
         week_ranks = week_lineup_preds.sum(1)
         week_ranks.name = 'week_rank'
@@ -265,9 +270,6 @@ def main():
     for p in selected_team:
         if p not in current_lineup:
             print(player_info.join(n_games).join(rankings).loc[p].to_dict())
-
-
-
 
     """
     SAVE DATA
