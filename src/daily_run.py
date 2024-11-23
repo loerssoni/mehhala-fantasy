@@ -138,7 +138,7 @@ def main():
     baseline_expected = preds.loc[all_current_preds, cats].copy()
     baseline_expected = baseline_expected.mean()
     
-    opp_expected = preds.loc[opp_lineup, cats].copy()
+    opp_expected = preds.loc[[c for c in opp_lineup if c in all_current_preds], cats].copy()
     opp_expected = opp_expected.mean()
     
     from scipy import stats
