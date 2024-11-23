@@ -163,7 +163,7 @@ def run_simple_training(player_features_map, data, player_type):
         if len(player_features_map[c]) == 0:
             player_features_map[c] = ['dummyvar']
 
-        logging.info('fitting ' + c)
+        print('fitting ' + c)
         lr = Pipeline([
             ('scl', StandardScaler()),
             ('reg', (TransformedTargetRegressor(RidgeCV(cv=KFold(n_splits=3, shuffle=False), alphas=[1e-4, 1e-2, 1e-1, 10]), **transformers.get(c, {}))))
@@ -175,9 +175,9 @@ def run_simple_training(player_features_map, data, player_type):
         preds = pipe.predict(X_test[player_features_map[c]])
         preds = np.clip(preds, 0, np.inf)
         score = r2_score(y_test[c], preds)
-        logging.info(f'{c}  --  {score}')
+        print(f'{c}  --  {score}')
         mae = mean_absolute_error(y_test[c], preds)
-        logging.info(f'{c}  --  {mae}')
+        print(f'{c}  --  {mae}')
 
         # refit
         pipe.fit(X[player_features_map[c]], y[c])
