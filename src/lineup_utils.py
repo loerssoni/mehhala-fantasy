@@ -31,7 +31,7 @@ def can_include_player(player_to_check, available_positions, position_lookup):
             return True
     return False
 
-def goalie_probability(p_current_selected):
+def goalie_probability(p_current_selected, p_player):
     # Compute p_none (probability that none are true in p_current_selected)
     p_none = (1 - p_current_selected).product()
 
@@ -42,7 +42,7 @@ def goalie_probability(p_current_selected):
     )
 
     # Compute the total probability
-    p_result = (p_none + p_one)
+    p_result = (p_none + p_one) * p_player
 
     return p_result
 
@@ -58,7 +58,7 @@ def get_rest_of_season_games(date_now, player_games, selected_team, position_loo
 
         for player in available_games.playerId.tolist():
             if player in goalie_start_prob:
-                player_rest_of_season_games[player] += goalie_probability(day_goalie_prob)
+                player_rest_of_season_games[player] += goalie_probability(day_goalie_prob, goalie_start_prob[player])
 
             elif can_include_player(player, available_positions, position_lookup):
                 player_rest_of_season_games[player] += 1
