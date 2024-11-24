@@ -168,7 +168,7 @@ def main():
     all_available_players = all_available_players.playerId.tolist()
 
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
-    TEAM_MAX_LENGTH = 200
+    TEAM_MAX_LENGTH = 300
     own_c = pd.Series({c:0 for c in cats})
     while len(selected_team) < TEAM_MAX_LENGTH:
         print(str(len(selected_team)), end='\r')
