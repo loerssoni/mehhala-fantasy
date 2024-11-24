@@ -206,7 +206,7 @@ def main():
             print('Selected: ', player_info.loc[selected_player,'name'])
             selected_team.append(selected_player)
             # own_current = (own_current * len(selected_team) + added_vals.loc[selected_player] * (14-len(selected_team))) / 14
-            own_c += lineup_preds.loc[selected_player].fillna(0)
+            own_c = (own_c * (len(selected_team) - 1) + lineup_preds.loc[selected_player]).fillna(0) / len(selected_team)
 
             data_dict = {'playerId':selected_player, 
                          'rank': round(ranks_season.loc[selected_player], 3), 
