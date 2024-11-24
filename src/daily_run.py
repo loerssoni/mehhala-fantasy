@@ -139,8 +139,8 @@ def main():
     starting_teams = teams.loc[(pd.to_datetime(teams.index) == (date + pd.Timedelta('1d')))]
     all_current_players = players[players.player_key.isin(starting_teams.player_key)].playerId.tolist()
     all_current_preds = [p for p in all_current_players if p in preds.index]
-    #preds_st = ((preds - preds.loc[all_current_preds].mean())/(preds.std()))
-    preds_st = (preds - preds.min()) / (preds.max() - preds.min()) 
+    preds_st = ((preds - preds.loc[all_current_preds].mean())/(preds.std()))
+
     baseline_expected = preds_st.loc[all_current_preds, cats].copy()
     baseline_expected = baseline_expected.mean()
 
