@@ -183,11 +183,12 @@ def main():
         stats_available = rest_games[rest_games.index.isin(preds.index)].index
         lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
         lineup_preds.ga = preds.loc[stats_available].ga
-        
+
         compt = [p for p in all_current_preds if p in lineup_preds.index]
-        rel_lineup_preds = ((lineup_preds.fillna(0) + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean()) / (preds.loc[compt].std())
-        
-        #added_vals = lineup_preds.apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
+
+        lineup_len_divisors = lineup_preds.notna() + preds.loc[selected_team, cats].count()
+        rel_lineup_preds = ((lineup_preds + preds.loc[selected_team, cats].count()*own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / (preds.loc[compt, cats].std())
+
         ranks_season = rel_lineup_preds.sum(1)
         ranks_season.name = 'rank'
 
@@ -195,11 +196,10 @@ def main():
         week_stats_available = week_rest_games[week_rest_games.index.isin(preds.index)].index
         week_lineup_preds = preds.loc[week_stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
         week_lineup_preds.ga = preds.loc[week_stats_available].ga
-        
+
         compt = [p for p in opp_lineup if p in week_lineup_preds.index]
-        week_rel_lineup_preds = ((week_lineup_preds.fillna(0) + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean())/ (preds.loc[compt].std())
-        
-        #week_added_vals = week_lineup_preds.apply(lambda x: prob_A_greater_than_B(x, opp_expected), 1).apply(pd.Series, index=cats)
+        week_rel_lineup_preds =  ((week_lineup_preds + preds.loc[selected_team, cats].count()*own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / (preds.loc[compt, cats].std())
+
         week_ranks = week_rel_lineup_preds.sum(1)
         week_ranks.name = 'week_rank'
 
@@ -207,8 +207,7 @@ def main():
             selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
             print('Selected: ', player_info.loc[selected_player,'name'])
             selected_team.append(selected_player)
-            # own_current = (own_current * len(selected_team) + added_vals.loc[selected_player] * (14-len(selected_team))) / 14
-            own_c = (own_c * (len(selected_team) - 1) + lineup_preds.loc[selected_player].fillna(0)) / len(selected_team)
+            own_c = preds.loc[selected_team, cats].mean().fillna(0)
 
             data_dict = {'playerId':selected_player, 
                          'rank': round(ranks_season.loc[selected_player], 3), 
