@@ -183,9 +183,9 @@ def main():
         lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
         
         compt = [p for p in all_current_preds if p in lineup_preds.index]
-        lineup_preds = (lineup_preds - preds.loc[compt].mean())/ (preds.loc[compt].std())
+        lineup_preds = (lineup_preds - preds.loc[compt].mean()) / (preds.loc[compt].std())
         
-        added_vals = lineup_preds.apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
+        #added_vals = lineup_preds.apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
         ranks_season = lineup_preds.sum(1)
         ranks_season.name = 'rank'
 
@@ -196,7 +196,7 @@ def main():
         compt = [p for p in opp_lineup if p in week_lineup_preds.index]
         week_lineup_preds = (week_lineup_preds - preds.loc[compt].mean())/ (preds.loc[compt].std())
         
-        week_added_vals = week_lineup_preds.apply(lambda x: prob_A_greater_than_B(x, opp_expected), 1).apply(pd.Series, index=cats)
+        #week_added_vals = week_lineup_preds.apply(lambda x: prob_A_greater_than_B(x, opp_expected), 1).apply(pd.Series, index=cats)
         week_ranks = week_lineup_preds.sum(1)
         week_ranks.name = 'week_rank'
 
