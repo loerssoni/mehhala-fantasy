@@ -182,6 +182,7 @@ def main():
         rest_games = lineup_utils.get_rest_of_season_games((date + pd.Timedelta('1d')), player_games, selected_team, position_lookup, preds.icetime.dropna())
         stats_available = rest_games[rest_games.index.isin(preds.index)].index
         lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
+        lineup_preds.ga = preds.loc[stats_available].ga
         
         compt = [p for p in all_current_preds if p in lineup_preds.index]
         rel_lineup_preds = ((lineup_preds + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean()) / (preds.loc[compt].std())
@@ -192,7 +193,8 @@ def main():
 
         week_rest_games = lineup_utils.get_rest_of_season_games(date, week_games, selected_team, position_lookup, preds.icetime.dropna())
         week_stats_available = week_rest_games[week_rest_games.index.isin(preds.index)].index
-        week_lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
+        week_lineup_preds = preds.loc[week_stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
+        week_lineup_preds.ga = preds.loc[week_stats_available].ga
         
         compt = [p for p in opp_lineup if p in week_lineup_preds.index]
         week_rel_lineup_preds = ((week_lineup_preds + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean())/ (preds.loc[compt].std())
