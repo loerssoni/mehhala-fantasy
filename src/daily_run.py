@@ -58,7 +58,7 @@ def main():
     preds.so = preds.so * preds.icetime
     preds.win = preds.win * preds.icetime
     preds.save = preds.save * preds.icetime
-    preds['ga'] = -preds['ga']
+    preds.ga = 1 / preds.ga
     logging.info('preds processed.' ) 
     logging.info(preds.shape)
     
