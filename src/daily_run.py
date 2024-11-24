@@ -185,7 +185,7 @@ def main():
         lineup_preds.ga = preds.loc[stats_available].ga
         
         compt = [p for p in all_current_preds if p in lineup_preds.index]
-        rel_lineup_preds = ((lineup_preds + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean()) / (preds.loc[compt].std())
+        rel_lineup_preds = ((lineup_preds.fillna(0) + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean()) / (preds.loc[compt].std())
         
         #added_vals = lineup_preds.apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
         ranks_season = rel_lineup_preds.sum(1)
@@ -197,7 +197,7 @@ def main():
         week_lineup_preds.ga = preds.loc[week_stats_available].ga
         
         compt = [p for p in opp_lineup if p in week_lineup_preds.index]
-        week_rel_lineup_preds = ((week_lineup_preds + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean())/ (preds.loc[compt].std())
+        week_rel_lineup_preds = ((week_lineup_preds.fillna(0) + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean())/ (preds.loc[compt].std())
         
         #week_added_vals = week_lineup_preds.apply(lambda x: prob_A_greater_than_B(x, opp_expected), 1).apply(pd.Series, index=cats)
         week_ranks = week_rel_lineup_preds.sum(1)
@@ -208,7 +208,7 @@ def main():
             print('Selected: ', player_info.loc[selected_player,'name'])
             selected_team.append(selected_player)
             # own_current = (own_current * len(selected_team) + added_vals.loc[selected_player] * (14-len(selected_team))) / 14
-            own_c = (own_c * (len(selected_team) - 1) + lineup_preds.loc[selected_player]).fillna(0) / len(selected_team)
+            own_c = (own_c * (len(selected_team) - 1) + lineup_preds.loc[selected_player].fillna(0)) / len(selected_team)
 
             data_dict = {'playerId':selected_player, 
                          'rank': round(ranks_season.loc[selected_player], 3), 
