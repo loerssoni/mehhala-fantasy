@@ -184,10 +184,10 @@ def main():
         lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
         
         compt = [p for p in all_current_preds if p in lineup_preds.index]
-        lineup_preds = ((lineup_preds + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean()) / (preds.loc[compt].std())
+        rel_lineup_preds = ((lineup_preds + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean()) / (preds.loc[compt].std())
         
         #added_vals = lineup_preds.apply(lambda x: prob_A_greater_than_B(x, baseline_expected), 1).apply(pd.Series, index=cats)
-        ranks_season = lineup_preds.sum(1)
+        ranks_season = rel_lineup_preds.sum(1)
         ranks_season.name = 'rank'
 
         week_rest_games = lineup_utils.get_rest_of_season_games(date, week_games, selected_team, position_lookup, preds.icetime.dropna())
@@ -195,10 +195,10 @@ def main():
         week_lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
         
         compt = [p for p in opp_lineup if p in week_lineup_preds.index]
-        week_lineup_preds = ((week_lineup_preds + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean())/ (preds.loc[compt].std())
+        week_rel_lineup_preds = ((week_lineup_preds + len(selected_team)*own_c)/(len(selected_team)+1) - preds.loc[compt].mean())/ (preds.loc[compt].std())
         
         #week_added_vals = week_lineup_preds.apply(lambda x: prob_A_greater_than_B(x, opp_expected), 1).apply(pd.Series, index=cats)
-        week_ranks = week_lineup_preds.sum(1)
+        week_ranks = week_rel_lineup_preds.sum(1)
         week_ranks.name = 'week_rank'
 
         if len(selected_team) < 14:
