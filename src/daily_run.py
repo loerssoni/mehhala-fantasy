@@ -126,10 +126,8 @@ def main():
     date = dates[0]
     week_teams = teams.loc[(pd.to_datetime(teams.index) >= m.week_start)&(pd.to_datetime(teams.index) <= m.week_end)]
 
-    ir = [p.player_key for t in info for p in t.roster.players if p.selected_position.date == date_now.strftime('%Y-%m-%d') and 'IR' in p.selected_position.position]
-    ir = teams[(teams.player_key.isin(ir))&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
-    ir = ir.merge(players, how='left', on='player_key').playerId.tolist()
-
+    ir = players[players.status.str.contains('IR')].playerId.tolist()
+    
     current_lineup = teams[(teams.team_id == current_team.team_key)&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
     current_lineup = current_lineup.merge(players, how='left', on='player_key').playerId.tolist()
 
