@@ -126,7 +126,11 @@ def main():
     date = dates[0]
     week_teams = teams.loc[(pd.to_datetime(teams.index) >= m.week_start)&(pd.to_datetime(teams.index) <= m.week_end)]
 
-    ir = players[players.status.str.contains('IR')].playerId.tolist()
+    #ir = players[players.status.str.contains('IR')].playerId.tolist()
+    ir = [p.player_key for t in info for p in t.roster.players if p.selected_position.date == date_now.strftime('%Y-%m-%d') and 'IR' in p.selected_position.position]
+    ir = teams[(teams.player_key.isin(ir))&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
+    ir = ir.merge(players, how='left', on='player_key').playerId.tolist()
+ 
     
     current_lineup = teams[(teams.team_id == current_team.team_key)&(teams.index.get_level_values('date') == (date_now + pd.Timedelta('1d')).strftime('%Y-%m-%d'))]
     current_lineup = current_lineup.merge(players, how='left', on='player_key').playerId.tolist()
@@ -196,16 +200,22 @@ def main():
 
         if len(selected_team) < 16:
 
-            if len(selected_new) >= 1 and len(selected_team) < 15:
-                available = [p for p in current_lineup if p not in selected_team]
-
+            # three goalies by week stats
+            if len(selected_team) < 3:
+                available = [p for p in all_available_players if p not in selected_team + ir and 'G' in player_info.loc[p].pos]
+                selected_player = week_ranks.loc[[p for p in available if p in week_ranks]].idxmax()
+            
+            # then 13 skaters
             else:
-                available = [p for p in all_available_players if p not in selected_team + ir]
-
+                available = [p for p in current_lineup if p not in selected_team + ir]
+                
+            if len(available) == 0:
+                available = [p for p in current_lineup if p not in selected_team]
+                
             if len(selected_team) == 0:
                  selected_player = week_ranks.loc[[p for p in available if p in week_ranks]].idxmax()
-            else:
-                 selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
+                
+            selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
 
             print('Selected: ', player_info.loc[selected_player,'name'])
 
