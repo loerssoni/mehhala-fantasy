@@ -151,7 +151,7 @@ def main():
     all_available_players = all_available_players.playerId.tolist()
 
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
-    TEAM_MAX_LENGTH = 100
+    TEAM_MAX_LENGTH = 25
 
     nglineup = 0
     ngwlineup = 0
