@@ -162,7 +162,7 @@ def main():
 
     selected_new = []
     selected_old = []
-    seleced_team = []
+    selected_team = []
     while len(selected_team) < TEAM_MAX_LENGTH:
         print(str(len(selected_team)), end='\r')
 
