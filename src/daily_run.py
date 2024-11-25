@@ -153,7 +153,7 @@ def main():
     all_available_players = all_available_players.playerId.tolist()
 
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
-    TEAM_MAX_LENGTH = 150
+    TEAM_MAX_LENGTH = 100
 
     nglineup = 0
     ngwlineup = 0
@@ -237,9 +237,15 @@ def main():
 
         else:
             available = [p for p in all_available_players if p not in selected_team]
-            base = [p for p in selected_team] 
-            rest_of_them = ranks_season[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
-            week_rest_of_them = week_ranks[[p for p in available if p in week_stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
+            base = [p for p in selected_team]
+
+            rest_of_them = []
+
+            for pos in ['G','C','D','LW','RW']:
+                pos_available = [p for p in available if pos in player_info.loc[p, 'pos']]
+                rest_of_them += ranks_season[[p for p in pos_available if p in stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
+                week_rest_of_them += week_ranks[[p for p in pos_available if p in week_stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
+
             rest_of_them =  list(set(rest_of_them + week_rest_of_them))
 
             best_taken = ranks_season[[p for p in players.playerId.tolist() if p in stats_available and p not in rest_of_them + current_lineup]].sort_values(ascending=False).iloc[:100].index.tolist()
