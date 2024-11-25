@@ -196,13 +196,13 @@ def main():
 
         if len(selected_team) < 16:
 
-            if len(selected_new) >= 2:
+            if len(selected_new) >= 1 and len(selected_team) < 15:
                 available = [p for p in current_lineup if p not in selected_team]
 
             else:
                 available = [p for p in all_available_players if p not in selected_team + ir]
 
-            if len(selected_team) < 0:
+            if len(selected_team) == 0:
                  selected_player = week_ranks.loc[[p for p in available if p in week_ranks]].idxmax()
             else:
                  selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
