@@ -45,12 +45,15 @@ def main():
     GET PREDICTIONS
     """
 
-    skater_preds = get_latest_predictions('skater', [30, 15, 10, 5, 3])
+    skater_preds, skater_std = get_latest_predictions('skater', [30, 15, 10, 5, 3])
     logging.info('made skater preds')
     logging.info(skater_preds.shape)
-    goalie_preds = get_latest_predictions('goalie', [50, 30, 20, 15, 10, 8, 3, 1])
+
+    goalie_preds, goalie_std = get_latest_predictions('goalie', [50, 30, 20, 15, 10, 8, 3, 1])
     logging.info('made goalie preds')
     logging.info(goalie_preds.shape)
+
+    player_stds = pd.concat([skater_std, goalie_std])
 
     preds = pd.concat([skater_preds, goalie_preds], axis=0)
     preds['plusmin'] = preds['goalsfor'] - preds['goalsaga']
