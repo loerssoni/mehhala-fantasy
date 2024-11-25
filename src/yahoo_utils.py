@@ -40,12 +40,7 @@ def fetch_player_data(game_id):
 import os
 
 def get_players(game_id):
-    filepath = f'data/players{game_id}.csv'
-    if not os.path.isfile(filepath):
-        players = fetch_player_data(game_id)
-        players.to_csv(filepath)
-    else:
-        players = pd.read_csv(filepath,index_col=0)
+    players = fetch_player_data(game_id)
     players[~players.playerId.duplicated()].copy()
     return players
 
