@@ -25,7 +25,7 @@ def fetch_player_data(game_id):
     q = get_q(game_id)
     players = q.get_league_players()
     pdf = pd.DataFrame([{
-    'pos':p.display_position.split(','), 
+    'pos': str(p.display_position.split(',')) , 
     'name': p.name.full, 
     'player_key':p.player_key, 
     'team': p.editorial_team_abbr,
