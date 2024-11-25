@@ -5,6 +5,8 @@ PRED_COLS = {
     'skater': ['g', 'a', 'sog', 'fow', 'hit', 'block', 'pim', 'goalsfor', 'goalsaga', 'ppp'],
     'goalie': ['ga','win','so', 'save', 'icetime']
 }
+cats = ['g','a','sog','fow','hit','block','pim','plusmin','ppp', 'ga','win','so','save']
+
 
 def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=True):
     
@@ -40,6 +42,17 @@ def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=Tru
     y = pd.read_hdf(y_f)    
     y = y.sort_values('gameId', ascending=False)
     
+    y_std = y.copy()
+
+    if player_type == 'skater':
+        y_std['plusmin'] = y_std['goalsfor'] - y_std['goalsaga']
+    
+    if player_type == 'goalie':
+        y_std.ga = (y.icetime / y_std.ga).clip(0,1.5)
+    
+    y_std = ((y_std - y_std.groupby('playerId').transform('mean')) ** 2).mean() ** 0.5
+    y_std = y_std[[c for c in y_std.index if c in cats]].copy()
+
     min_periods = 5
 
     if player_type == 'goalie':
@@ -57,7 +70,7 @@ def get_rest_of_season_player_stats(player_type, cols=None, window=30, shift=Tru
     y_r = y_r.loc[X.index]
     
     X['dummyvar'] = 1
-    return X, y_r
+    return X, y_r, y_std
 
 def get_team_stats(shift=True):
     df = pd.read_hdf('data/teams.h5')

@@ -86,7 +86,7 @@ def get_data_by_windows(player_type, windows=[], force_retrain=False, shift=True
     full_feature_map = {}
     for window in windows:
         if force_retrain:
-            X, y = get_rest_of_season_player_stats(player_type, window=window, shift=shift)
+            X, y, y_std = get_rest_of_season_player_stats(player_type, window=window, shift=shift)
         else:
             X, y = None, None
         
@@ -102,7 +102,7 @@ def get_data_by_windows(player_type, windows=[], force_retrain=False, shift=True
             
         
         if not force_retrain:
-            X, y = get_rest_of_season_player_stats(player_type, window=window, cols=original_cols, shift=shift)
+            X, y, y_std = get_rest_of_season_player_stats(player_type, window=window, cols=original_cols, shift=shift)
         original_cols = X.columns
         X = X[original_cols].copy()
         X.columns = [f'{c}_{window}' for c in original_cols]
@@ -111,7 +111,7 @@ def get_data_by_windows(player_type, windows=[], force_retrain=False, shift=True
 
     X = pd.concat(Xs, axis=1).dropna()
     X['dummyvar'] = 1
-    return X, y, full_feature_map
+    return X, y, y_std,full_feature_map
 
 
 # Define transformation functions

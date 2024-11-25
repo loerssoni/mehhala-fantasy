@@ -6,7 +6,7 @@ def get_latest_predictions(player_type, windows):
     from model_training import get_data_by_windows, get_simple_pipelines
     from process_data import PRED_COLS
 
-    X, y, feature_map = get_data_by_windows(player_type, windows, force_retrain=False, shift=False)
+    X, y, y_std, feature_map = get_data_by_windows(player_type, windows, force_retrain=False, shift=False)
     X_latest = X.groupby('playerId').last()
     X = X.groupby('playerId').shift(1).dropna()
     y = y.loc[X.index]
@@ -22,7 +22,8 @@ def get_latest_predictions(player_type, windows):
             cols = ['dummyvar']
         preds[col] = pipelines[col].predict(X_latest.dropna()[cols])
     preds_df = pd.DataFrame(preds, index=X_latest.dropna().index)
-    return preds_df
+    return preds_df, y_std
+
 
 
 def main():
@@ -187,7 +188,11 @@ def main():
         compt = [p for p in all_current_preds if p in lineup_preds.index]
 
         lineup_len_divisors = lineup_preds.notna() + preds.loc[selected_team, cats].count()
-        rel_lineup_preds = ((lineup_preds + preds.loc[selected_team, cats].count()*own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / (preds.loc[compt, cats].std())
+
+        # standard deviation that takes into account within player variability
+        std_factor =  ( (preds.loc[compt, cats].var()) + (player_stds / (len(selected_team)**0.5))**2 ) ** 0.5
+
+        rel_lineup_preds = ((lineup_preds + preds.loc[selected_team, cats].count()*own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
 
         ranks_season = rel_lineup_preds.sum(1)
         ranks_season.name = 'rank'
@@ -198,7 +203,7 @@ def main():
         week_lineup_preds.ga = preds.loc[week_stats_available].ga
 
         compt = [p for p in opp_lineup if p in week_lineup_preds.index]
-        week_rel_lineup_preds =  ((week_lineup_preds + preds.loc[selected_team, cats].count()*own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / (preds.loc[compt, cats].std())
+        week_rel_lineup_preds =  ((week_lineup_preds + preds.loc[selected_team, cats].count()*own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
 
         week_ranks = week_rel_lineup_preds.sum(1)
         week_ranks.name = 'week_rank'
@@ -226,7 +231,7 @@ def main():
             rest_of_them = ranks_season[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
             week_rest_of_them = week_ranks[[p for p in available if p in week_stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
             rest_of_them =  list(set(rest_of_them + week_rest_of_them))
-            
+
             best_taken = ranks_season[[p for p in players.playerId.tolist() if p in stats_available and p not in rest_of_them + current_lineup]].sort_values(ascending=False).iloc[:100].index.tolist()
             for p in rest_of_them + best_taken:
                 data_dict = {'playerId':p, 
@@ -276,6 +281,7 @@ def main():
     for p in selected_team:
         if p not in current_lineup:
             print(player_info.join(n_games).join(rankings).loc[p].to_dict())
+
 
     """
     SAVE DATA
