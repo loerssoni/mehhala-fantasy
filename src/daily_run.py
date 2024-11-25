@@ -240,9 +240,11 @@ def main():
             base = [p for p in selected_team]
 
             rest_of_them = []
+            week_rest_of_them = []
 
             for pos in ['G','C','D','LW','RW']:
                 pos_available = [p for p in available if pos in player_info.loc[p, 'pos']]
+                
                 rest_of_them += ranks_season[[p for p in pos_available if p in stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
                 week_rest_of_them += week_ranks[[p for p in pos_available if p in week_stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
 
