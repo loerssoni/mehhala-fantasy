@@ -173,7 +173,11 @@ def main():
 
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
     TEAM_MAX_LENGTH = 150
+    
+    nglineup = 0
+    ngwlineup = 0
     own_c = pd.Series({c:0 for c in cats})
+    own_c_week = pd.Series({c:0 for c in cats})
     while len(selected_team) < TEAM_MAX_LENGTH:
         print(str(len(selected_team)), end='\r')
 
@@ -185,28 +189,29 @@ def main():
 
         rest_games = lineup_utils.get_rest_of_season_games((date + pd.Timedelta('1d')), player_games, selected_team, position_lookup, preds.icetime.dropna())
         stats_available = rest_games[rest_games.index.isin(preds.index)].index
-        lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available] / rest_games.mean())
+        lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available])
         lineup_preds.ga = preds.loc[stats_available].ga
 
         compt = [p for p in all_current_preds if p in lineup_preds.index]
 
-        lineup_len_divisors = lineup_preds.notna() + preds.loc[selected_team, cats].count()
-
+        lineup_len_divisors = (lineup_preds.notna() + preds.loc[selected_team, cats].count()) * nglineup
         # standard deviation that takes into account within player variability
-        std_factor =  ( (preds.loc[compt, cats].var()) + (player_stds / (len(selected_team)**0.5))**2 ) ** 0.5
+        std_factor =  ( (preds.loc[compt, cats].var()) + (player_stds / (17**0.5))**2 ) ** 0.5
 
-        rel_lineup_preds = ((lineup_preds + preds.loc[selected_team, cats].count()*own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
+        rel_lineup_preds = ((lineup_preds + own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
 
         ranks_season = rel_lineup_preds.sum(1)
         ranks_season.name = 'rank'
 
         week_rest_games = lineup_utils.get_rest_of_season_games(date, week_games, selected_team, position_lookup, preds.icetime.dropna())
         week_stats_available = week_rest_games[week_rest_games.index.isin(preds.index)].index
-        week_lineup_preds = preds.loc[week_stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available] / week_rest_games.mean())
+        week_lineup_preds = preds.loc[week_stats_available, cats].apply(lambda x: x * week_rest_games[week_stats_available])
         week_lineup_preds.ga = preds.loc[week_stats_available].ga
 
         compt = [p for p in opp_lineup if p in week_lineup_preds.index]
-        week_rel_lineup_preds =  ((week_lineup_preds + preds.loc[selected_team, cats].count()*own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
+        lineup_len_divisors = (week_lineup_preds.notna() + preds.loc[selected_team, cats].count()) * ngwlineup
+        
+        week_rel_lineup_preds =  ((week_lineup_preds + own_c_week)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
 
         week_ranks = week_rel_lineup_preds.sum(1)
         week_ranks.name = 'week_rank'
@@ -214,9 +219,15 @@ def main():
         if len(selected_team) < 14:
             selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
             print('Selected: ', player_info.loc[selected_player,'name'])
-            selected_team.append(selected_player)
-            own_c = preds.loc[selected_team, cats].mean().fillna(0)
+            
+            own_c += lineup_preds.loc[selected_player, cats].fillna(0) * rest_games.loc[selected_player]
+            own_c_week += week_lineup_preds.loc[selected_player, cats].fillna(0) * week_rest_games.loc[selected_player]
 
+            nglineup += rest_games.loc[selected_player]
+            ngwlineup += week_rest_games.loc[selected_player]
+            
+            selected_team.append(selected_player)
+            
             data_dict = {'playerId':selected_player, 
                          'rank': round(ranks_season.loc[selected_player], 3), 
                          'games':rest_games.loc[selected_player], 
