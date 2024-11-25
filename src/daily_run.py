@@ -137,32 +137,13 @@ def main():
     opp_lineup = opp_lineup.merge(players, how='left', on='player_key').playerId.tolist() 
     logging.info('lineups processed')
 
-    """
-    COMPUTE BENCHMARKS
-    """
     starting_teams = teams.loc[(pd.to_datetime(teams.index) == (date + pd.Timedelta('1d')))]
     all_current_players = players[players.player_key.isin(starting_teams.player_key)].playerId.tolist()
-    all_current_preds = [p for p in all_current_players if p in preds.index]
-    preds_st = ((preds - preds.loc[all_current_preds].mean())/(preds.std()))
-
-    baseline_expected = preds_st.loc[all_current_preds, cats].copy()
-    baseline_expected = baseline_expected.mean()
-
-    opp_expected = preds_st.loc[[c for c in opp_lineup if c in all_current_preds], cats].copy()
-    opp_expected = opp_expected.mean()
-
-    from scipy import stats
-    def prob_A_greater_than_B(mu_A, mu_B):
-        # Calculate the mean and standard deviation of the difference distribution
-        mean_diff = mu_A - mu_B
-        prob = 1 - stats.norm.cdf(0, loc=mean_diff, scale=1)
-
-        return prob
+    
 
     """
     MAKE SELECTIONS
     """
-    selected_team = []
 
     date = dates[0]
     rankings = []
@@ -173,32 +154,30 @@ def main():
 
     week_games = player_games[(player_games.ts > date)&(player_games.ts <= m.week_end)]
     TEAM_MAX_LENGTH = 150
-    
+
     nglineup = 0
     ngwlineup = 0
     own_c = pd.Series({c:0 for c in cats})
     own_c_week = pd.Series({c:0 for c in cats})
+
+    selected_new = []
+    selected_old = []
+    seleced_team = []
     while len(selected_team) < TEAM_MAX_LENGTH:
         print(str(len(selected_team)), end='\r')
-
-        if len(selected_team) < 14:
-            available = [p for p in current_lineup if p not in selected_team + ir]
-
-        else:
-            available = [p for p in all_available_players if p not in selected_team]
 
         rest_games = lineup_utils.get_rest_of_season_games((date + pd.Timedelta('1d')), player_games, selected_team, position_lookup, preds.icetime.dropna())
         stats_available = rest_games[rest_games.index.isin(preds.index)].index
         lineup_preds = preds.loc[stats_available, cats].apply(lambda x: x * rest_games[stats_available])
-        lineup_preds.ga = preds.loc[stats_available].ga
 
-        compt = [p for p in all_current_preds if p in lineup_preds.index]
-
-        lineup_len_divisors = (lineup_preds.notna() + preds.loc[selected_team, cats].count()) * nglineup
-        # standard deviation that takes into account within player variability
+        compt = [p for p in all_current_players if p in lineup_preds.index]
+        
+        # standard deviation that takes into account individual players' uncertainty
         std_factor =  ( (preds.loc[compt, cats].var()) + (player_stds / (17**0.5))**2 ) ** 0.5
 
-        rel_lineup_preds = ((lineup_preds + own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
+        lineup_len_divisors = (lineup_preds.notna() + preds.loc[selected_team, cats].count()).apply(lambda x: x * (nglineup + rest_games.mean()) / (len(selected_team)+1))
+
+        rel_lineup_preds = ((lineup_preds.fillna(0) + own_c)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
 
         ranks_season = rel_lineup_preds.sum(1)
         ranks_season.name = 'rank'
@@ -209,29 +188,45 @@ def main():
         week_lineup_preds.ga = preds.loc[week_stats_available].ga
 
         compt = [p for p in opp_lineup if p in week_lineup_preds.index]
-        lineup_len_divisors = (week_lineup_preds.notna() + preds.loc[selected_team, cats].count()) * ngwlineup
-        
-        week_rel_lineup_preds =  ((week_lineup_preds + own_c_week)/lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
+
+        week_lineup_len_divisors = (week_lineup_preds.notna() + preds.loc[selected_team, cats].count()).apply(lambda x: x * (ngwlineup + week_rest_games.mean()) / (len(selected_team)+1))
+        week_rel_lineup_preds =  ((week_lineup_preds.fillna(0) + own_c_week)/week_lineup_len_divisors - preds.loc[compt, cats].mean()) / std_factor
 
         week_ranks = week_rel_lineup_preds.sum(1)
         week_ranks.name = 'week_rank'
 
-        if len(selected_team) < 14:
-            selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
+
+        if len(selected_team) < 16:
+
+            if len(selected_new) >= 2:
+                available = [p for p in current_lineup if p not in selected_team]
+
+            else:
+                available = [p for p in all_available_players if p not in selected_team + ir]
+
+            if len(selected_team) < 0:
+                 selected_player = week_ranks.loc[[p for p in available if p in week_ranks]].idxmax()
+            else:
+                 selected_player = ranks_season.loc[[p for p in available if p in ranks_season]].idxmax()
+
             print('Selected: ', player_info.loc[selected_player,'name'])
-            
-            own_c += lineup_preds.loc[selected_player, cats].fillna(0) * rest_games.loc[selected_player]
-            own_c_week += week_lineup_preds.loc[selected_player, cats].fillna(0) * week_rest_games.loc[selected_player]
+
+            own_c += lineup_preds.loc[selected_player, cats].fillna(0)
+            own_c_week += week_lineup_preds.loc[selected_player, cats].fillna(0)
 
             nglineup += rest_games.loc[selected_player]
             ngwlineup += week_rest_games.loc[selected_player]
-            
+
             selected_team.append(selected_player)
-            
+            if selected_player not  in current_lineup:
+                selected_new.append(selected_player)
+
+
             data_dict = {'playerId':selected_player, 
                          'rank': round(ranks_season.loc[selected_player], 3), 
                          'games':rest_games.loc[selected_player], 
                          'is_available': True}
+
             if selected_player in week_stats_available:
                 data_dict['week_rank'] = round(week_ranks.loc[selected_player], 3)
                 data_dict['week_games'] = week_rest_games.loc[selected_player]
@@ -241,6 +236,7 @@ def main():
             rankings.append(data_dict)
 
         else:
+            available = [p for p in all_available_players if p not in selected_team]
             base = [p for p in selected_team] 
             rest_of_them = ranks_season[[p for p in available if p in stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
             week_rest_of_them = week_ranks[[p for p in available if p in week_stats_available]].sort_values(ascending=False).iloc[:(TEAM_MAX_LENGTH-len(selected_team))].index.tolist()
