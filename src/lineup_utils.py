@@ -12,7 +12,7 @@ POSITIONS_QUOTA = {
 }
 
 def get_available_positions(selected_team, position_lookup):
-    combs = product(*[position_lookup[player] + ['WC'] if position_lookup[player] != ['G'] else position_lookup[player] for player in selected_team])
+    combs = product(*[position_lookup.loc[player, 'pos_l'] + ['WC'] if position_lookup.loc[player, 'pos_l'] != ['G'] else position_lookup.loc[player, 'pos_l'] for player in selected_team])
     valid_positions = set()
     min_slots_left = sum(POSITIONS_QUOTA.values())
     for c in combs:
@@ -25,8 +25,8 @@ def get_available_positions(selected_team, position_lookup):
             valid_positions = valid_positions.union(set(left_pos.keys()))
     return valid_positions
 
-def can_include_player(player_to_check, available_positions, position_lookup):
-    for pos in position_lookup[player_to_check]:
+def can_include_player(player_to_check, available_positions, players):
+    for pos in players.loc[player_to_check, 'pos_l']:
         if pos in available_positions:
             return True
     return False
@@ -47,21 +47,23 @@ def goalie_probability(p_current_selected):
     return p_result
 
 
-def get_rest_of_season_games(date_now, player_games, selected_team, position_lookup, goalie_start_prob):
-    player_rest_of_season_games = {p:0 for p in player_games.playerId.unique()}
-    for date in pd.date_range(date_now, player_games.ts.max()):
-        available_games = player_games[(player_games.ts == date)]
+def get_rest_of_period_games(date_now, player_games, selected_team, players, preds):
+    goalie_start_prob = preds.icetime.dropna()
+    
+    player_rest_of_season_games = {p:0 for p in player_games.playerId.unique() if p not in selected_team}
+    for date in pd.date_range(date_now, player_games.date.max()):
+        
+        available_games = player_games[(player_games.date == date)]
         day_sel_team = available_games[(available_games.playerId.isin(selected_team))].playerId.tolist()
-        available_positions = get_available_positions(day_sel_team, position_lookup)
+        available_positions = get_available_positions(day_sel_team, players)
 
         day_goalie_prob = goalie_start_prob[[p for p in day_sel_team if p in goalie_start_prob]]
 
-        for player in available_games.playerId.tolist():
+        available_players = [p for p in available_games.playerId.tolist() if p not in selected_team]
+        for player in available_players:
             if player in goalie_start_prob:
                 player_rest_of_season_games[player] += goalie_probability(day_goalie_prob)
-
-            elif can_include_player(player, available_positions, position_lookup):
+            elif can_include_player(player, available_positions, players):
                 player_rest_of_season_games[player] += 1
 
     return pd.Series(player_rest_of_season_games)
-
