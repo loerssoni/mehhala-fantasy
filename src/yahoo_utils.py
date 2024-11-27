@@ -37,8 +37,8 @@ def get_matchup(date=None, week=None):
     matchup = {
         'week': matchup.week,
         'opponent': [t.team_key for t in matchup.teams if t.team_key != TEAM_KEY][0],
-        'start': matchup.week_start,
-        'end': matchup.week_end
+        'start': pd.to_datetime(matchup.week_start).date(),
+        'end': pd.to_datetime(matchup.week_end).date()
     }
     return matchup
 
