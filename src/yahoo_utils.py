@@ -24,19 +24,17 @@ def get_q():
     )
     return q
 
-def get_matchup(date=None, week=None):
+def get_matchup(team_key, date=None):
     q = get_q()
-    matchups = q.get_team_info(TEAM_KEY.split('.')[-1]).matchups
+    matchups = q.get_team_info(team_key.split('.')[-1]).matchups
     if date:
         matchup = [m for m in matchups if pd.to_datetime(m.week_end).date() > date + pd.Timedelta('1d')][0]
-    elif week:
-        matchup = [m for m in matchups if m.week == week][0]
     else:
         return None
     
     matchup = {
         'week': matchup.week,
-        'opponent': [t.team_key for t in matchup.teams if t.team_key != TEAM_KEY][0],
+        'opponent': [t.team_key for t in matchup.teams if t.team_key != team_key][0],
         'start': pd.to_datetime(matchup.week_start).date(),
         'end': pd.to_datetime(matchup.week_end).date()
     }
@@ -136,11 +134,15 @@ def refresh_player_games():
     player_games.to_csv('data/player_games.csv', index=False)
     return
 
-def load_player_games():
+def load_player_games(mode, date, matchup):
     player_games = pd.read_csv('data/player_games.csv')
     player_games = player_games.set_index('playerId')
     player_games['date'] = pd.to_datetime(player_games.date)
-    return player_games
+        
+    date_filter = (player_games.date.dt.date >= date)
+    if mode == 'week':
+        date_filter = date_filter & (player_games.date.dt.date <= matchup['end'])
+    return player_games.loc[date_filter].copy()
 
 def refresh_teams():
     q = get_q()
@@ -152,6 +154,7 @@ def refresh_teams():
         for player in t_info.roster.players:
             rosters.append({
                 'team_key':t_info.team_key,
+                'team_name':t_info.name,
                 'player_key': player.player_key,
                 'selected_position':player.selected_position.position,
             })
@@ -159,7 +162,7 @@ def refresh_teams():
     teams.to_csv('data/teams.csv', index=False)
     return
 
-def load_players(matchup=None):
+def load_players(team_key, matchup=None):
     players = pd.read_csv('data/players.csv').set_index('playerId')
     teams = pd.read_csv('data/teams.csv')
 
@@ -167,7 +170,7 @@ def load_players(matchup=None):
     
     players['pos_l'] = players.pos.apply(literal_eval)
     
-    players['current_lineup'] = players.team_key == TEAM_KEY
+    players['current_lineup'] = players.team_key == team_key
     players['available'] = players.team_key.isna() | players.current_lineup
     players['is_rostered'] = players.team_key.notna()
     
