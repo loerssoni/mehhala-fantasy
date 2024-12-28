@@ -1,47 +1,28 @@
 import pandas as pd
 from yfpy.query import YahooFantasySportsQuery
 import json
-
-from ast import literal_eval
-
 with open('../creds/token.json', 'r') as f:
     yahoo_access_token = json.loads(f.read())
 
-GAME_ID = 453
-TEAM_KEY = "453.l.15482.t.3"
+
 
 league_ids = {
+     427:21834,
      453: 15482
 }
-
-def get_q():
+          
+def get_q(game_id):
     q = YahooFantasySportsQuery(
-        game_id = GAME_ID,
-        league_id = league_ids[GAME_ID],
+        game_id = game_id,
+        league_id = league_ids[game_id],
         game_code = 'nhl',
         yahoo_access_token_json = yahoo_access_token,
         browser_callback = False,
     )
     return q
 
-def get_matchup(team_key, date=None):
-    q = get_q()
-    matchups = q.get_team_info(team_key.split('.')[-1]).matchups
-    if date:
-        matchup = [m for m in matchups if pd.to_datetime(m.week_end).date() > date + pd.Timedelta('1d')][0]
-    else:
-        return None
-    
-    matchup = {
-        'week': matchup.week,
-        'opponent': [t.team_key for t in matchup.teams if t.team_key != team_key][0],
-        'start': pd.to_datetime(matchup.week_start).date(),
-        'end': pd.to_datetime(matchup.week_end).date()
-    }
-    return matchup
-
-def refresh_players():
-    q = get_q()
+def fetch_player_data(game_id):
+    q = get_q(game_id)
     players = q.get_league_players()
     pdf = pd.DataFrame([{
     'pos': str(p.display_position.split(',')) , 
@@ -54,22 +35,50 @@ def refresh_players():
     bios = pd.read_hdf('data/bios.h5')
     bios['name'] = bios[['name']].replace(names_map.to_dict())['name']
     pdf = pdf.merge(bios, how='inner', on='name', suffixes=('_yh', ''))
-    
-    faulty_keys = [
-        '453.p.32762',
-        '453.p.7654',
-        '453.p.5774'
-    ]
-    pdf = pdf.loc[~pdf.player_key.isin(faulty_keys)]
-    
-    faulty_ids = [
-        8483575
-    ]
-    pdf = pdf.loc[~pdf.playerId.isin(faulty_ids)]
-    return pdf.to_csv('data/players.csv', index=False)
+    return pdf
+
+import os
+
+def get_players(game_id):
+    players = fetch_player_data(game_id)
+    players[~players.playerId.duplicated()].copy()
+    return players
+
+def get_ts(t):
+    return pd.Timestamp(t, unit='s', tz='UTC')\
+        .tz_convert('US/Pacific')
 
 def iso_get_ts(t):
     return pd.Timestamp(t).tz_convert('US/Pacific')
+
+def get_all_matchups(game_id):
+    q = get_q(game_id)
+    all_matchups = []
+    for i in range(1, 27):
+        all_matchups += q.get_league_matchups_by_week(i)
+    return all_matchups
+
+def get_matchup_results(matchups):
+    stats_map = {
+        1: 'goals',
+        2: 'assists',
+        4: 'plusmin',
+        5: 'pim',
+        8: 'ppp',
+        14: 'shots',
+        16: 'fow',
+        31: 'hits',
+        32: 'blocks'
+    }
+    stats = []
+    for match in matchups:
+        for mt in match.teams:
+            for s in mt.team_stats.stats:
+                stats.append({'id': s.stat_id, 'val': s.value})
+    stats = pd.DataFrame(stats)
+    stats['name'] = stats.id.apply(lambda x: stats_map.get(x, None))
+    return stats
+
 
 def get_gameweek(date):
     import requests
@@ -87,7 +96,7 @@ def get_gameweek(date):
                 'gameId': game['id'],
                 'home': game['homeTeam']['abbrev'],
                 'away': game['awayTeam']['abbrev'],
-                'date': iso_get_ts(game['startTimeUTC']).date()
+                'ts': iso_get_ts(game['startTimeUTC']).date()
             })
     return games, data.get('nextStartDate')
 
@@ -98,83 +107,97 @@ def get_schedule(dates):
         if date >= pd.Timestamp(next_start):
             g, next_start = get_gameweek(date.strftime('%Y-%m-%d'))
             games += g
-    games = [g for g in games if dates[0].date() <= g['date'] <= dates[-1].date()]
+    games = [g for g in games if dates[0].date() <= g['ts'] <= dates[-1].date()]
     return games
 
-def refresh_player_games():
-    q = get_q()
-    weeks = q.get_team_info(TEAM_KEY.split('.')[-1]).matchups
-    current_schedule = {}
-    for week in weeks:
-        dates = pd.date_range(week.week_start, week.week_end)
-        current_schedule[week.week] = get_schedule(dates)
+import json
+import pickle
 
-    games_list = []
-    for k, v in current_schedule.items():
-        for r in v:
-            a = {'week':k}
-            a.update(r)
-            games_list.append(a)
-    games_df = pd.DataFrame(games_list)
-    games_df['date'] = pd.to_datetime(games_df['date'])
-    
-    players = pd.read_csv('data/players.csv')
-    players['team_yh'] = players.team_yh.replace({
-        'SJ':'SJS',
-        'LA':'LAK',
-        'TB':'TBL',
-        'NJ':'NJD'
-    })
-    
-    player_games = pd.concat([
-        games_df.merge(players, how='left', left_on='home', right_on='team_yh'),
-        games_df.merge(players, how='left', left_on='away', right_on='team_yh')
-    ])[['week','gameId','date','pos','name','playerId']]
-    player_games = player_games.dropna()
-    player_games.to_csv('data/player_games.csv', index=False)
-    return
+def get_games_by_week(game_id):
+    filepath = f'data/schedule{game_id}.pickle'
+    if not os.path.isfile(filepath):
+        q = get_q(game_id)
+        weeks = q.get_game_weeks_by_game_id(game_id)
+        weekly_schedule = {}
+        for week in weeks:
+            dates = pd.date_range(week.start, week.end)
+            weekly_schedule[week.display_name] = get_schedule(dates)
+        with open(filepath, 'wb') as f:
+            pickle.dump(weekly_schedule, f)
+    else:
+        with open(filepath, 'rb') as f:
+            weekly_schedule = pickle.load(f)
 
-def load_player_games(mode, date, matchup):
-    player_games = pd.read_csv('data/player_games.csv')
-    player_games = player_games.set_index('playerId')
-    player_games['date'] = pd.to_datetime(player_games.date)
-        
-    date_filter = (player_games.date.dt.date >= date)
-    if mode == 'week':
-        date_filter = date_filter & (player_games.date.dt.date <= matchup['end'])
-    return player_games.loc[date_filter].copy()
+    return weekly_schedule
 
-def refresh_teams():
-    q = get_q()
-    teams = q.get_league_teams()
-    team_info = []
-    rosters = []
-    for t in teams:
-        t_info = q.get_team_info(t.team_key.split('.')[-1])
-        for player in t_info.roster.players:
-            rosters.append({
-                'team_key':t_info.team_key,
-                'team_name':t_info.name,
-                'player_key': player.player_key,
-                'selected_position':player.selected_position.position,
-            })
-    teams = pd.DataFrame(rosters)
-    teams.to_csv('data/teams.csv', index=False)
-    return
+def get_moves(t):
+    moves = []
+    for p in t.players:
+        if p.transaction_data.destination_team_key:
+            moves.append({'player': p.player_key, 'to': p.transaction_data.destination_team_key})
+        if p.transaction_data.source_team_key:
+            moves.append({'player': p.player_key, 'from': p.transaction_data.source_team_key})
+    return moves
 
-def load_players(team_key, matchup=None):
-    players = pd.read_csv('data/players.csv').set_index('playerId')
-    teams = pd.read_csv('data/teams.csv')
 
-    players = players.reset_index().merge(teams, how='left', on='player_key').set_index('playerId')
-    
-    players['pos_l'] = players.pos.apply(literal_eval)
-    
-    players['current_lineup'] = players.team_key == team_key
-    players['available'] = players.team_key.isna() | players.current_lineup
-    players['is_rostered'] = players.team_key.notna()
-    
-    if matchup is not None:
-        players['opp_lineup'] = players.team_key == matchup['opponent']
+def argsort(seq):
+    return sorted(range(len(seq)), key=seq.__getitem__)
 
-    return players
+def get_transactions(game_id):
+    q = get_q(game_id)
+    transactions = q.get_league_transactions()
+    transactions = [transactions[i] for i in argsort([t.timestamp for t in transactions])]
+    tr_by_date = {}
+    for t in transactions:
+        k = (get_ts(t.timestamp) + pd.Timedelta('1d')).date()
+        if k not in tr_by_date.keys():
+            tr_by_date[k] = []
+        tr_by_date[k] += get_moves(t)
+    return tr_by_date
+
+
+def get_initial_teams(game_id):
+    q = get_q(game_id)
+    players = q.get_league_draft_results()
+    teams = {}
+    for p in players:
+        if p.team_key not in teams:
+            teams[p.team_key] = []
+        teams[p.team_key].append(p.player_key)
+    return teams
+
+def get_teams(game_id, force=False):
+    filepath = f'data/teams{game_id}.csv'
+    if not os.path.isfile(filepath) or force:
+        q = get_q(game_id)
+        s = q.get_league_settings()
+        weeks = q.get_game_weeks_by_game_id(game_id)
+        dates = pd.date_range(get_ts(s.draft_time).strftime('%Y-%m-%d'),
+                  weeks[-1].end, freq='d').date
+
+        from copy import deepcopy
+
+        teams = {}
+        transactions = get_transactions(game_id)
+        current_teams = get_initial_teams(game_id)
+        for date in dates:
+            trs = transactions.get(date, [])
+            for move in trs:
+                if 'to' in move:
+                    current_teams[move['to']].append(move['player'])
+                if 'from' in move:
+                    current_teams[move['from']].remove(move['player'])
+            teams[date] = deepcopy(current_teams)
+
+        df = pd.DataFrame(teams).T.melt(var_name='team_id', value_name='player', ignore_index=False)
+        df = df.reset_index()
+        df = df.join(df.player.explode(), rsuffix='_key', validate='one_to_many')
+        df['index'] = pd.to_datetime(df['index'])
+        df = df.drop('player', axis=1).set_index('index')
+        df.index.name = 'date'
+        df.to_csv(filepath)
+    else:
+        df = pd.read_csv(filepath,index_col=0)
+    df = df.set_index(pd.to_datetime(df.index))
+
+    return df
