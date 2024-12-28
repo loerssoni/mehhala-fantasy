@@ -198,7 +198,7 @@ def main():
         week_ranks.name = 'week_rank'
 
 
-        if len(selected_team) < 16:
+        if len(selected_team) < 15:
 
             # three goalies by week stats
             if len(selected_team) < 3:
