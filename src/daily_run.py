@@ -220,7 +220,8 @@ def main():
             print('Selected: ', player_info.loc[selected_player,'name'])
 
             own_c += lineup_preds.loc[selected_player, cats].fillna(0)
-            own_c_week += week_lineup_preds.loc[selected_player, cats].fillna(0)
+            if selected_player in week_lineup_preds.index:
+                own_c_week += week_lineup_preds.loc[selected_player, cats].fillna(0)
 
             nglineup += rest_games.loc[selected_player]
             ngwlineup += week_rest_games.loc[selected_player]
